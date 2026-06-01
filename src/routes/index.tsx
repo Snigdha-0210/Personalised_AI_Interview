@@ -7,10 +7,14 @@ import {
   Code2, MessageSquare, Volume2
 } from "lucide-react";
 
+import { useEffect, useState } from "react";
+import { useAuth } from "@/lib/auth";
+
 export const Route = createFileRoute("/")(({
   component: Landing,
 }));
 
+// (Features, Question Types, Stats remain the same)
 const features = [
   {
     icon: Brain, title: "Adaptive AI Interviewer",
@@ -60,13 +64,34 @@ const stats = [
   { value: "4", label: "Question Formats" },
 ];
 
-const testimonials = [
-  { name: "Priya S.", role: "Software Engineer @ Google", text: "HireMind's adaptive AI felt more realistic than any other mock interview platform I used. The difficulty changes kept me on my toes.", rating: 5 },
-  { name: "Arjun M.", role: "PM @ Stripe", text: "The recruiter analytics view is insane. I could actually see WHY the AI rated me the way it did. That transparency is rare.", rating: 5 },
-  { name: "Chloe R.", role: "Frontend Lead @ Airbnb", text: "I landed my dream job after 3 weeks of using HireMind. The resume ATS score alone saved me from sending a weak application.", rating: 5 },
-];
-
 function Landing() {
+  const { user } = useAuth();
+  const [testimonials, setTestimonials] = useState<any[]>([]);
+  const [reviewText, setReviewText] = useState("");
+  const [reviewRole, setReviewRole] = useState("");
+  
+  useEffect(() => {
+    fetch("/api/testimonials").then(r => r.json()).then(data => {
+      if (data.success) setTestimonials(data.data);
+    });
+  }, []);
+
+  const submitReview = async () => {
+    if (!reviewText) return;
+    const token = localStorage.getItem("hiremind.token");
+    const res = await fetch("/api/testimonials", {
+      method: "POST",
+      headers: { "Content-Type": "application/json", "Authorization": `Bearer ${token}` },
+      body: JSON.stringify({ content: reviewText, rating: 5, role: reviewRole })
+    });
+    if (res.ok) {
+      setReviewText("");
+      setReviewRole("");
+      fetch("/api/testimonials").then(r => r.json()).then(data => {
+        if (data.success) setTestimonials(data.data);
+      });
+    }
+  };
   return (
     <div className="min-h-screen bg-background">
       {/* Navbar */}
@@ -234,21 +259,51 @@ function Landing() {
             <h2 className="text-3xl font-semibold mb-3">Loved by candidates at top companies</h2>
           </div>
           <div className="grid md:grid-cols-3 gap-6">
-            {testimonials.map((t, i) => (
-              <div key={i} className="rounded-2xl bg-card border border-border p-6 shadow-card">
-                <div className="flex gap-1 mb-3">
-                  {Array.from({ length: t.rating }).map((_, j) => (
-                    <Star key={j} className="w-4 h-4 fill-amber-400 text-amber-400" />
-                  ))}
-                </div>
-                <p className="text-sm text-muted-foreground leading-relaxed mb-4">"{t.text}"</p>
-                <div>
-                  <div className="text-sm font-semibold">{t.name}</div>
-                  <div className="text-xs text-muted-foreground">{t.role}</div>
-                </div>
+            {testimonials.length === 0 ? (
+              <div className="col-span-full text-center text-muted-foreground">
+                No reviews yet. Be the first to leave one!
               </div>
-            ))}
+            ) : (
+              testimonials.map((t, i) => (
+                <div key={i} className="rounded-2xl bg-card border border-border p-6 shadow-card">
+                  <div className="flex gap-1 mb-3">
+                    {Array.from({ length: t.rating }).map((_, j) => (
+                      <Star key={j} className="w-4 h-4 fill-amber-400 text-amber-400" />
+                    ))}
+                  </div>
+                  <p className="text-sm text-muted-foreground leading-relaxed mb-4">"{t.content}"</p>
+                  <div>
+                    <div className="text-sm font-semibold">{t.name}</div>
+                    <div className="text-xs text-muted-foreground">{t.role || "User"}</div>
+                  </div>
+                </div>
+              ))
+            )}
           </div>
+
+          {user && (
+            <div className="mt-12 max-w-xl mx-auto bg-card border border-border p-6 rounded-2xl shadow-card">
+              <h3 className="font-semibold mb-4 text-center">Leave a Review</h3>
+              <div className="flex flex-col gap-3">
+                <input 
+                  type="text" 
+                  placeholder="Your Role (e.g. Software Engineer)" 
+                  className="px-3 py-2 border border-border rounded-lg text-sm bg-transparent"
+                  value={reviewRole}
+                  onChange={e => setReviewRole(e.target.value)}
+                />
+                <textarea 
+                  placeholder="What do you think of HireMind?" 
+                  className="px-3 py-2 border border-border rounded-lg text-sm min-h-[100px] bg-transparent"
+                  value={reviewText}
+                  onChange={e => setReviewText(e.target.value)}
+                />
+                <Button onClick={submitReview} className="w-full bg-gradient-primary border-0 text-white shadow-elevated">
+                  Submit Review
+                </Button>
+              </div>
+            </div>
+          )}
         </div>
       </section>
 

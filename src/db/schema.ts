@@ -6,6 +6,7 @@ export const users = pgTable('users', {
   id: serial('id').primaryKey(),
   email: text('email').notNull().unique(),
   name: text('name'),
+  passwordHash: text('password_hash'),
   createdAt: timestamp('created_at').defaultNow().notNull(),
   updatedAt: timestamp('updated_at').defaultNow().notNull(),
 });
@@ -135,6 +136,16 @@ export const analytics = pgTable('analytics', {
   confidenceGrowth: jsonb('confidence_growth').default('[]'),
   readinessGrowth: jsonb('readiness_growth').default('[]'),
   updatedAt: timestamp('updated_at').defaultNow().notNull(),
+});
+
+// Testimonials
+export const testimonials = pgTable('testimonials', {
+  id: serial('id').primaryKey(),
+  userId: integer('user_id').references(() => users.id).notNull(),
+  content: text('content').notNull(),
+  rating: integer('rating').notNull(),
+  role: text('role'),
+  createdAt: timestamp('created_at').defaultNow().notNull(),
 });
 
 // Relationships

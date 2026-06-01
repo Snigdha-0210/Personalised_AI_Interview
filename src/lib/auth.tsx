@@ -10,16 +10,7 @@ type Ctx = {
 };
 
 const AuthCtx = createContext<Ctx | null>(null);
-const KEY = "hiremind.user";
-const USERS_KEY = "hiremind.users";
-
-type StoredUser = User & { password: string };
-
-function readUsers(): StoredUser[] {
-  if (typeof window === "undefined") return [];
-  try { return JSON.parse(localStorage.getItem(USERS_KEY) || "[]"); } catch { return []; }
-}
-function writeUsers(u: StoredUser[]) { localStorage.setItem(USERS_KEY, JSON.stringify(u)); }
+const KEY = "hiremind.token";
 
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
@@ -27,33 +18,48 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     try {
-      const raw = localStorage.getItem(KEY);
-      if (raw) setUser(JSON.parse(raw));
+      const token = localStorage.getItem(KEY);
+      const userStr = localStorage.getItem("hiremind.user");
+      if (token && userStr) {
+        setUser(JSON.parse(userStr));
+      }
     } catch {}
     setLoading(false);
   }, []);
 
   const login = async (email: string, password: string) => {
-    const users = readUsers();
-    const found = users.find((u) => u.email === email && u.password === password);
-    if (!found) throw new Error("Invalid email or password");
-    const u: User = { id: found.id, email: found.email, name: found.name };
-    localStorage.setItem(KEY, JSON.stringify(u));
-    setUser(u);
+    const res = await fetch("/api/auth/login", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ email, password })
+    });
+    const data = await res.json();
+    if (!data.success) throw new Error(data.error || "Login failed");
+    
+    localStorage.setItem(KEY, data.token);
+    localStorage.setItem("hiremind.user", JSON.stringify(data.user));
+    setUser(data.user);
   };
 
   const signup = async (name: string, email: string, password: string) => {
-    const users = readUsers();
-    if (users.some((u) => u.email === email)) throw new Error("Email already registered");
-    const u: StoredUser = { id: crypto.randomUUID(), name, email, password };
-    users.push(u);
-    writeUsers(users);
-    const safe: User = { id: u.id, email: u.email, name: u.name };
-    localStorage.setItem(KEY, JSON.stringify(safe));
-    setUser(safe);
+    const res = await fetch("/api/auth/signup", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ name, email, password })
+    });
+    const data = await res.json();
+    if (!data.success) throw new Error(data.error || "Signup failed");
+    
+    localStorage.setItem(KEY, data.token);
+    localStorage.setItem("hiremind.user", JSON.stringify(data.user));
+    setUser(data.user);
   };
 
-  const logout = () => { localStorage.removeItem(KEY); setUser(null); };
+  const logout = () => { 
+    localStorage.removeItem(KEY); 
+    localStorage.removeItem("hiremind.user"); 
+    setUser(null); 
+  };
 
   return <AuthCtx.Provider value={{ user, loading, login, signup, logout }}>{children}</AuthCtx.Provider>;
 }

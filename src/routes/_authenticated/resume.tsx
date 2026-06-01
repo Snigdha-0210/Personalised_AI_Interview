@@ -99,8 +99,10 @@ function ResumePage() {
 
     console.log("Sending upload request to /api/resumes/upload");
     try {
+      const token = localStorage.getItem("hiremind.token");
       const res = await fetch("/api/resumes/upload", {
         method: "POST",
+        headers: { "Authorization": `Bearer ${token}` },
         body: formData,
       });
 
