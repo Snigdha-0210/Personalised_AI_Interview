@@ -21,6 +21,7 @@ import { Route as AuthenticatedJdMatchRouteImport } from './routes/_authenticate
 import { Route as AuthenticatedInterviewSetupRouteImport } from './routes/_authenticated/interview-setup'
 import { Route as AuthenticatedInterviewRoomRouteImport } from './routes/_authenticated/interview-room'
 import { Route as AuthenticatedDashboardRouteImport } from './routes/_authenticated/dashboard'
+import { Route as AuthenticatedAuditRouteImport } from './routes/_authenticated/audit'
 import { Route as AuthenticatedAnalyticsRouteImport } from './routes/_authenticated/analytics'
 import { Route as AuthenticatedAiMonitorRouteImport } from './routes/_authenticated/ai-monitor'
 
@@ -85,6 +86,11 @@ const AuthenticatedDashboardRoute = AuthenticatedDashboardRouteImport.update({
   path: '/dashboard',
   getParentRoute: () => AuthenticatedRoute,
 } as any)
+const AuthenticatedAuditRoute = AuthenticatedAuditRouteImport.update({
+  id: '/audit',
+  path: '/audit',
+  getParentRoute: () => AuthenticatedRoute,
+} as any)
 const AuthenticatedAnalyticsRoute = AuthenticatedAnalyticsRouteImport.update({
   id: '/analytics',
   path: '/analytics',
@@ -102,6 +108,7 @@ export interface FileRoutesByFullPath {
   '/signup': typeof SignupRoute
   '/ai-monitor': typeof AuthenticatedAiMonitorRoute
   '/analytics': typeof AuthenticatedAnalyticsRoute
+  '/audit': typeof AuthenticatedAuditRoute
   '/dashboard': typeof AuthenticatedDashboardRoute
   '/interview-room': typeof AuthenticatedInterviewRoomRoute
   '/interview-setup': typeof AuthenticatedInterviewSetupRoute
@@ -117,6 +124,7 @@ export interface FileRoutesByTo {
   '/signup': typeof SignupRoute
   '/ai-monitor': typeof AuthenticatedAiMonitorRoute
   '/analytics': typeof AuthenticatedAnalyticsRoute
+  '/audit': typeof AuthenticatedAuditRoute
   '/dashboard': typeof AuthenticatedDashboardRoute
   '/interview-room': typeof AuthenticatedInterviewRoomRoute
   '/interview-setup': typeof AuthenticatedInterviewSetupRoute
@@ -134,6 +142,7 @@ export interface FileRoutesById {
   '/signup': typeof SignupRoute
   '/_authenticated/ai-monitor': typeof AuthenticatedAiMonitorRoute
   '/_authenticated/analytics': typeof AuthenticatedAnalyticsRoute
+  '/_authenticated/audit': typeof AuthenticatedAuditRoute
   '/_authenticated/dashboard': typeof AuthenticatedDashboardRoute
   '/_authenticated/interview-room': typeof AuthenticatedInterviewRoomRoute
   '/_authenticated/interview-setup': typeof AuthenticatedInterviewSetupRoute
@@ -151,6 +160,7 @@ export interface FileRouteTypes {
     | '/signup'
     | '/ai-monitor'
     | '/analytics'
+    | '/audit'
     | '/dashboard'
     | '/interview-room'
     | '/interview-setup'
@@ -166,6 +176,7 @@ export interface FileRouteTypes {
     | '/signup'
     | '/ai-monitor'
     | '/analytics'
+    | '/audit'
     | '/dashboard'
     | '/interview-room'
     | '/interview-setup'
@@ -182,6 +193,7 @@ export interface FileRouteTypes {
     | '/signup'
     | '/_authenticated/ai-monitor'
     | '/_authenticated/analytics'
+    | '/_authenticated/audit'
     | '/_authenticated/dashboard'
     | '/_authenticated/interview-room'
     | '/_authenticated/interview-setup'
@@ -285,6 +297,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedDashboardRouteImport
       parentRoute: typeof AuthenticatedRoute
     }
+    '/_authenticated/audit': {
+      id: '/_authenticated/audit'
+      path: '/audit'
+      fullPath: '/audit'
+      preLoaderRoute: typeof AuthenticatedAuditRouteImport
+      parentRoute: typeof AuthenticatedRoute
+    }
     '/_authenticated/analytics': {
       id: '/_authenticated/analytics'
       path: '/analytics'
@@ -305,6 +324,7 @@ declare module '@tanstack/react-router' {
 interface AuthenticatedRouteChildren {
   AuthenticatedAiMonitorRoute: typeof AuthenticatedAiMonitorRoute
   AuthenticatedAnalyticsRoute: typeof AuthenticatedAnalyticsRoute
+  AuthenticatedAuditRoute: typeof AuthenticatedAuditRoute
   AuthenticatedDashboardRoute: typeof AuthenticatedDashboardRoute
   AuthenticatedInterviewRoomRoute: typeof AuthenticatedInterviewRoomRoute
   AuthenticatedInterviewSetupRoute: typeof AuthenticatedInterviewSetupRoute
@@ -318,6 +338,7 @@ interface AuthenticatedRouteChildren {
 const AuthenticatedRouteChildren: AuthenticatedRouteChildren = {
   AuthenticatedAiMonitorRoute: AuthenticatedAiMonitorRoute,
   AuthenticatedAnalyticsRoute: AuthenticatedAnalyticsRoute,
+  AuthenticatedAuditRoute: AuthenticatedAuditRoute,
   AuthenticatedDashboardRoute: AuthenticatedDashboardRoute,
   AuthenticatedInterviewRoomRoute: AuthenticatedInterviewRoomRoute,
   AuthenticatedInterviewSetupRoute: AuthenticatedInterviewSetupRoute,
