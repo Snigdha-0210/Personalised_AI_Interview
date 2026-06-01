@@ -56,9 +56,6 @@ router.post("/auth/login", async (req, res) => {
     res.status(500).json({ success: false, error: "Login failed" });
   }
 });
-const upload = multer({ storage: multer.memoryStorage() });
-const groq = new Groq({ apiKey: process.env.GROQ_API_KEY || "dummy" });
-
 router.post("/resumes/upload", requireAuth, upload.single("resume"), async (req: any, res: Response) => {
   try {
     if (!req.file) {
