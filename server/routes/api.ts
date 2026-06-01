@@ -69,7 +69,7 @@ router.post("/resumes/upload", requireAuth, upload.single("resume"), async (req:
 
     const completion = await groq.chat.completions.create({
       messages: [
-        { role: "system", content: "Extract candidate data. Return JSON: { \"atsScore\": 85, \"skills\": [\"React\"], \"projects\": [\"App\"], \"experience\": [\"Job\"] }" },
+        { role: "system", content: "Extract candidate data. Return ONLY JSON: { \"atsScore\": 85, \"extractedSkills\": { \"Frontend\": [\"React\"] }, \"qualityAnalysis\": { \"structure\": 80, \"readability\": 90, \"technicalDepth\": 70, \"achievementOrientation\": 60, \"keywordOptimization\": 80, \"recruiterFriendliness\": 85 }, \"suggestions\": [\"Add more metrics to experience\"], \"projects\": [\"App\"], \"experience\": [\"Job\"] }" },
         { role: "user", content: text }
       ],
       model: "llama-3.3-70b-versatile",
@@ -90,6 +90,7 @@ router.post("/resumes/upload", requireAuth, upload.single("resume"), async (req:
       versionNumber: 1,
       extractedText: text,
       atsScore: aiData.atsScore || 70,
+      aiSuggestions: aiData,
       projects: aiData.projects || [],
       experience: aiData.experience || [],
     }).returning();
@@ -214,17 +215,33 @@ router.get("/resumes/:userId", async (req, res) => {
     });
     
     // Map them to frontend format
-    const formatted = resumes.map(r => ({
-      _id: r.id,
-      name: r.title,
-      overallScore: r.versions[0]?.atsScore || 0,
-      skills: r.versions[0]?.skills || [],
-      experience: r.versions[0]?.experience || [],
-      createdAt: r.createdAt
-    }));
+    const formatted = resumes.map(r => {
+      const v = r.versions[0];
+      const ai = (v?.aiSuggestions as any) || {};
+      return {
+        _id: r.id,
+        fileName: r.title,
+        versionNumber: v?.versionNumber || 1,
+        createdAt: r.createdAt,
+        experienceLevel: "Mid-Level",
+        atsScore: v?.atsScore || 0,
+        qualityAnalysis: ai.qualityAnalysis || {},
+        aiAnalysis: {
+          hiringReadinessScore: ai.qualityAnalysis?.recruiterFriendliness || 0,
+          recruiterSummary: ai.suggestions?.[0] || "Strong candidate."
+        },
+        suggestions: ai.suggestions || [],
+        extractedSkills: ai.extractedSkills || {},
+        skills: ai.skills || [],
+        experience: v?.experience || []
+      };
+    });
     
     res.json({ success: true, data: formatted });
-  } catch (e) { res.status(500).json({ success: false }); }
+  } catch (e) {
+    console.error("GET /resumes/:userId ERROR:", e);
+    res.status(500).json({ success: false }); 
+  }
 });
 
 export default router;

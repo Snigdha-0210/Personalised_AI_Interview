@@ -160,6 +160,13 @@ export const resumesRelations = relations(resumes, ({ many }) => ({
   versions: many(resumeVersions),
 }));
 
+export const resumeVersionsRelations = relations(resumeVersions, ({ one }) => ({
+  resume: one(resumes, {
+    fields: [resumeVersions.resumeId],
+    references: [resumes.id],
+  }),
+}));
+
 export const sessionsRelations = relations(interviewSessions, ({ many }) => ({
   questions: many(interviewQuestions),
 }));
