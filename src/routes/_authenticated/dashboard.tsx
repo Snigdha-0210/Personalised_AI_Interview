@@ -2,7 +2,6 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { PageHeader } from "@/components/AppLayout";
 import { useState } from "react";
 import { Progress } from "@/components/ui/progress";
-import { getDashboardAnalytics } from "@/server/db-functions";
 import { Button } from "@/components/ui/button";
 import { TrendingUp, Award, CheckCircle2, Activity, Upload, FileText, Mic, ArrowUpRight } from "lucide-react";
 import { Area, AreaChart, Bar, BarChart, CartesianGrid, Legend, Line, LineChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
@@ -11,8 +10,10 @@ import { useResumeContext } from "@/lib/ResumeContext";
 export const Route = createFileRoute("/_authenticated/dashboard")({ 
   component: Dashboard,
   loader: async () => {
-    const res = await getDashboardAnalytics();
-    return res.data;
+    const res = await fetch("/api/dashboard/analytics");
+    if (!res.ok) return null;
+    const json = await res.json();
+    return json.data;
   }
 });
 

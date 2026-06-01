@@ -5,7 +5,6 @@ import { Textarea } from "@/components/ui/textarea";
 import { Progress } from "@/components/ui/progress";
 import { useResumeContext } from "@/lib/ResumeContext";
 import type { Question } from "@/lib/mock-data";
-import { startDefaultInterview } from "@/server/db-functions";
 import {
   Mic, Send, Sparkles, Clock, TrendingUp, TrendingDown, Minus,
   ChevronRight, CheckCircle2, XCircle, Code2, Lightbulb, Info
@@ -262,9 +261,14 @@ function Room() {
       try {
         if (!activeResume) {
           console.log("No resume active, starting default interview via Server Function");
-          const res = await startDefaultInterview();
-          if (res.success && res.data) {
-            setQuestions(res.data);
+          console.log("No resume active, starting default interview");
+          const res = await fetch("/api/interview/default/start", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" }
+          });
+          const data = await res.json();
+          if (data.success && data.data) {
+            setQuestions(data.data);
           }
         } else {
           const response = await fetch(`/api/interview/${activeResume._id}/start`, { method: "POST" });

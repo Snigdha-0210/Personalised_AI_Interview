@@ -6,7 +6,6 @@ import { Textarea } from "@/components/ui/textarea";
 import { useState } from "react";
 import { useResumeContext } from "@/lib/ResumeContext";
 import { Send, Sparkles } from "lucide-react";
-import { panelGradeDefault } from "@/server/db-functions";
 
 export const Route = createFileRoute("/_authenticated/panel")({ component: Panel });
 
@@ -29,9 +28,14 @@ function Panel() {
       let evaluations = [];
 
       if (!activeResume) {
-        const res = await panelGradeDefault({ data: { answer } });
-        if (res.success && res.data) {
-          evaluations = res.data.evaluations;
+        const res = await fetch("/api/interview/default/panel-grade", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ answer: answer })
+        });
+        const data = await res.json();
+        if (data.success && data.data.evaluations) {
+          evaluations = data.data.evaluations;
         }
       } else {
         const res = await fetch(`/api/interview/${activeResume._id}/panel-grade`, {
