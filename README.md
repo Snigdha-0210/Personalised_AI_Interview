@@ -4,6 +4,7 @@
 
 ## 🌟 Key Features
 
+* **Live Demo**: [https://personalised-ai-interview.vercel.app/](https://personalised-ai-interview.vercel.app/)
 * **Intelligent Candidate Profile**: A unified backend system built on MongoDB that tracks your resume data, identified skill gaps, and historical performance to provide a personalized "Readiness Score."
 * **Adaptive Difficulty Engine**: In the Live Interview Room, the AI dynamically adjusts the difficulty of subsequent questions based on your performance in real-time.
 * **Context-Aware Voice Interviews**: Practice with "Sage", an AI voice interviewer that leverages native browser Speech Recognition to transcribe your answers and intelligently refers to your actual past projects and target roles.
