@@ -2,7 +2,7 @@
 import express from "express";
 import cors from "cors";
 import mongoose from "mongoose";
-import { MongoMemoryServer } from "mongodb-memory-server";
+// removed memory server static import
 import dotenv from "dotenv";
 import multer from "multer";
 const pdfParse = require("pdf-parse");
@@ -38,14 +38,16 @@ async function connectDB() {
 
   try {
     if (MONGODB_URI) {
-      await mongoose.connect(MONGODB_URI);
-      console.log("✅ Connected to MongoDB (External)");
-    } else {
+      mongoose.connect(MONGODB_URI).then(() => console.log("✅ Connected to MongoDB"));
+    } else if (!process.env.VERCEL) {
       console.log("⚠️ No MONGODB_URI found. Starting in-memory MongoDB...");
-      const mongoServer = await MongoMemoryServer.create();
-      const memoryUri = mongoServer.getUri();
-      await mongoose.connect(memoryUri);
-      console.log("✅ Connected to MongoDB (In-Memory Fallback)");
+      import("mongodb-memory-server").then(({ MongoMemoryServer }) => {
+        MongoMemoryServer.create().then((mongoServer) => {
+          mongoose.connect(mongoServer.getUri()).then(() => console.log("✅ Connected to MongoDB (In-Memory Fallback)"));
+        });
+      }).catch(console.error);
+    } else {
+      console.log("⚠️ Vercel detected but no MONGODB_URI found. Database features will be disabled.");
     }
   } catch (err) {
     console.error("❌ MongoDB connection error:", err);
