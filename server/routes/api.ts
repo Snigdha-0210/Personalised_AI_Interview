@@ -67,16 +67,49 @@ router.post("/resumes/upload", requireAuth, upload.single("resume"), async (req:
     const pdfData = await pdfParse(req.file.buffer);
     const text = pdfData.text.slice(0, 5000);
 
+    const systemPrompt = `You are an expert ATS (Applicant Tracking System) and Senior Technical Recruiter.
+Analyze the provided resume text and extract highly detailed, granular data.
+You MUST return ONLY a valid JSON object. Do NOT wrap it in markdown block quotes. Do NOT add explanation.
+Use the following strict JSON schema:
+{
+  "atsScore": <number 0-100 based on keyword density and impact>,
+  "extractedSkills": {
+    "Languages": [<array of programming languages>],
+    "Frameworks": [<array of frameworks/libraries>],
+    "Tools": [<array of tools/platforms>],
+    "Soft Skills": [<array of soft skills>]
+  },
+  "qualityAnalysis": {
+    "structure": <number 0-100>,
+    "readability": <number 0-100>,
+    "technicalDepth": <number 0-100>,
+    "achievementOrientation": <number 0-100 measuring impact metrics>,
+    "keywordOptimization": <number 0-100>,
+    "recruiterFriendliness": <number 0-100>
+  },
+  "suggestions": [
+    <Provide 3-5 highly actionable, critical improvements for this specific resume>
+  ],
+  "projects": [<array of major project names>],
+  "experience": [<array of company names worked at>]
+}`;
+
     const completion = await groq.chat.completions.create({
       messages: [
-        { role: "system", content: "Extract candidate data. Return ONLY JSON: { \"atsScore\": 85, \"extractedSkills\": { \"Frontend\": [\"React\"] }, \"qualityAnalysis\": { \"structure\": 80, \"readability\": 90, \"technicalDepth\": 70, \"achievementOrientation\": 60, \"keywordOptimization\": 80, \"recruiterFriendliness\": 85 }, \"suggestions\": [\"Add more metrics to experience\"], \"projects\": [\"App\"], \"experience\": [\"Job\"] }" },
+        { role: "system", content: systemPrompt },
         { role: "user", content: text }
       ],
       model: "llama-3.3-70b-versatile",
       response_format: { type: "json_object" }
     });
 
-    const aiData = JSON.parse(completion.choices[0]?.message?.content || '{}');
+    let aiData;
+    try {
+      aiData = JSON.parse(completion.choices[0]?.message?.content || '{}');
+    } catch (e) {
+      console.error("Failed to parse Groq JSON", e);
+      aiData = {};
+    }
 
     // Create a Resume
     const [resume] = await db.insert(schema.resumes).values({
