@@ -1,7 +1,7 @@
 # HireMind OS 🚀
 
 **HireMind OS** is a unified, intelligent, and hyper-personalized Interview Operating System. It deeply analyzes a candidate's resume and job description to provide a tailored, dynamic interview preparation experience spanning adaptive mock interviews, voice conversations, and real-time multi-agent panel evaluations.
-# Live demo link ( google drive ): [https://drive.google.com/file/d/1IhTxl7-yheA3rEouS6-qGAALvsUi7G8U/view?usp=sharing]
+* **Live demo link ( google drive ) **: [https://drive.google.com/file/d/1IhTxl7-yheA3rEouS6-qGAALvsUi7G8U/view?usp=sharing]
 ## 🌟 Key Features
 
 * **Live Demo**: [https://personalised-ai-interview.vercel.app/](https://personalised-ai-interview.vercel.app/)
