@@ -257,8 +257,8 @@ function Room() {
   const currentDiff = diffHistory[diffHistory.length - 1].diff;
 
   useEffect(() => {
-    if (!activeResume) return;
-    fetch(`/api/interview/${activeResume._id}/start`, { method: "POST" })
+    const url = activeResume ? `/api/interview/${activeResume._id}/start` : `/api/interview/default/start`;
+    fetch(url, { method: "POST" })
       .then(res => res.json())
       .then(data => {
         if (data.success && data.data.questions) {

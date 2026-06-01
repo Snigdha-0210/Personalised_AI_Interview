@@ -20,12 +20,13 @@ function Panel() {
   ]);
 
   const submitAnswer = async () => {
-    if (!activeResume || !answer.trim()) return;
+    if (!answer.trim()) return;
     setLoading(true);
     setPanel(p => p.map(x => ({ ...x, status: "active", feedback: "Evaluating..." })));
     
     try {
-      const res = await fetch(`/api/interview/${activeResume._id}/panel-grade`, {
+      const url = activeResume ? `/api/interview/${activeResume._id}/panel-grade` : `/api/interview/default/panel-grade`;
+      const res = await fetch(url, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ transcript: answer })

@@ -61,8 +61,8 @@ function VoiceInterview() {
 
   // Fetch Questions
   useEffect(() => {
-    if (!activeResume) return;
-    fetch(`/api/interview/${activeResume._id}/start`, { method: "POST" })
+    const url = activeResume ? `/api/interview/${activeResume._id}/start` : `/api/interview/default/start`;
+    fetch(url, { method: "POST" })
       .then(res => res.json())
       .then(data => {
         if (data.success && data.data.questions) setQuestions(data.data.questions);

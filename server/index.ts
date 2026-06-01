@@ -409,6 +409,34 @@ app.post("/api/interview/:id/panel-grade", async (req, res) => {
   }
 });
 
+// Default endpoints for users without a resume
+app.post("/api/interview/default/start", async (req, res) => {
+  try {
+    const profileContext = `
+      Target Role: General Software Engineer
+      Resume Overview: No specific background provided. Generate general computer science and software engineering questions.
+      Identified Weaknesses (Skill Gap): General algorithms, basic system design, language fundamentals.
+      Previously Asked Questions: []
+    `;
+    const questions = await ai.generateInterviewQuestions(profileContext);
+    res.json({ success: true, data: questions });
+  } catch (error: any) {
+    console.error("Default Start Interview API failed:", error);
+    res.status(500).json({ success: false, error: "Default Start Interview API failed" });
+  }
+});
+
+app.post("/api/interview/default/panel-grade", async (req, res) => {
+  try {
+    const transcript = req.body.transcript || "";
+    const result = await ai.gradePanelInterview(transcript);
+    res.json({ success: true, data: result });
+  } catch (error: any) {
+    console.error("Default Panel Grade API failed:", error);
+    res.status(500).json({ success: false, error: "Default Panel Grade API failed" });
+  }
+});
+
 app.get("/api/profile/:userId", async (req, res) => {
   try {
     const profile = await CandidateProfile.findOne({ userId: req.params.userId }).populate("interviewHistory");
