@@ -9,7 +9,6 @@ import * as schema from "../../src/db/schema";
 import { eq, desc } from "drizzle-orm";
 
 const router = Router();
-const upload = multer({ storage: multer.memoryStorage() });
 const groq = new Groq({ apiKey: process.env.GROQ_API_KEY || "dummy" });
 const JWT_SECRET = process.env.JWT_SECRET || "fallback_super_secret_key";
 
@@ -55,45 +54,73 @@ router.post("/auth/login", async (req, res) => {
   } catch (e) {
     res.status(500).json({ success: false, error: "Login failed" });
   }
+});const upload = multer({ 
+  storage: multer.memoryStorage(),
+  limits: { fileSize: 10 * 1024 * 1024 }, // 10MB limit
+  fileFilter: (req, file, cb) => {
+    if (file.mimetype === "application/pdf" || file.originalname.toLowerCase().endsWith(".pdf")) {
+      cb(null, true);
+    } else {
+      cb(new Error("Invalid file type. Only PDF is supported."));
+    }
+  }
 });
+
 router.post("/resumes/upload", requireAuth, upload.single("resume"), async (req: any, res: Response) => {
   try {
     if (!req.file) {
-      return res.status(400).json({ success: false, error: "No file uploaded" });
+      return res.status(400).json({ success: false, error: "No file uploaded or file was rejected" });
     }
 
     const userId = req.user.id;
+    let pdfData;
+    try {
+      pdfData = await pdfParse(req.file.buffer);
+    } catch (err) {
+      console.error("PDF Parsing failed:", err);
+      return res.status(400).json({ success: false, error: "PDF Parsing failed. Please ensure the file is a valid PDF." });
+    }
 
-    const pdfData = await pdfParse(req.file.buffer);
-    const text = pdfData.text.slice(0, 5000);
+    const text = pdfData.text.slice(0, 10000); // Increased slice to capture more context
 
-    const systemPrompt = `You are an expert ATS (Applicant Tracking System) and Senior Technical Recruiter.
-Analyze the provided resume text and extract highly detailed, granular data.
-You MUST return ONLY a valid JSON object. Do NOT wrap it in markdown block quotes. Do NOT add explanation.
-Use the following strict JSON schema:
+    // No pseudo-code inside values! Strict valid JSON only.
+    const systemPrompt = `You are an expert ATS and Senior Technical Recruiter.
+Analyze the provided resume text and extract highly detailed data.
+You MUST return ONLY a valid JSON object. Do not wrap it in markdown. Do not add explanation.
+Use exactly this structure with real data (or empty arrays/strings if missing):
 {
-  "atsScore": <number 0-100 based on keyword density and impact>,
+  "contact": { "name": "string", "email": "string", "phone": "string", "linkedin": "string", "github": "string" },
+  "atsScore": 85,
+  "hiringReadiness": 75,
+  "candidateLevel": "Mid-Level",
   "extractedSkills": {
-    "Languages": [<array of programming languages>],
-    "Frameworks": [<array of frameworks/libraries>],
-    "Tools": [<array of tools/platforms>],
-    "Soft Skills": [<array of soft skills>]
+    "Languages": ["string"],
+    "Frameworks": ["string"],
+    "Tools": ["string"],
+    "SoftSkills": ["string"]
   },
   "qualityAnalysis": {
-    "structure": <number 0-100>,
-    "readability": <number 0-100>,
-    "technicalDepth": <number 0-100>,
-    "achievementOrientation": <number 0-100 measuring impact metrics>,
-    "keywordOptimization": <number 0-100>,
-    "recruiterFriendliness": <number 0-100>
+    "structure": 90,
+    "readability": 85,
+    "technicalDepth": 80,
+    "achievementOrientation": 70,
+    "keywordOptimization": 80,
+    "recruiterFriendliness": 90
   },
-  "suggestions": [
-    <Provide 3-5 highly actionable, critical improvements for this specific resume>
-  ],
-  "projects": [<array of major project names>],
-  "experience": [<array of company names worked at>]
+  "suggestions": {
+    "strengths": ["string"],
+    "weaknesses": ["string"],
+    "priorityImprovements": ["string"],
+    "missingSections": ["string"],
+    "formattingSuggestions": ["string"]
+  },
+  "projects": ["string"],
+  "experience": ["string"],
+  "education": ["string"],
+  "certifications": ["string"]
 }`;
 
+    console.log("Sending prompt to Groq...");
     const completion = await groq.chat.completions.create({
       messages: [
         { role: "system", content: systemPrompt },
@@ -106,10 +133,23 @@ Use the following strict JSON schema:
     let aiData;
     try {
       aiData = JSON.parse(completion.choices[0]?.message?.content || '{}');
+      console.log("Groq successfully returned valid JSON.");
     } catch (e) {
-      console.error("Failed to parse Groq JSON", e);
-      aiData = {};
+      console.error("Failed to parse Groq JSON", e, completion.choices[0]?.message?.content);
+      return res.status(500).json({ success: false, error: "AI Analysis failed to return valid JSON." });
     }
+
+    // Always ensure objects exist so the UI never crashes
+    const qa = aiData.qualityAnalysis || {};
+    const safeQA = {
+      structure: qa.structure || 50,
+      readability: qa.readability || 50,
+      technicalDepth: qa.technicalDepth || 50,
+      achievementOrientation: qa.achievementOrientation || 50,
+      keywordOptimization: qa.keywordOptimization || 50,
+      recruiterFriendliness: qa.recruiterFriendliness || 50,
+    };
+    aiData.qualityAnalysis = safeQA;
 
     // Create a Resume
     const [resume] = await db.insert(schema.resumes).values({
@@ -122,16 +162,18 @@ Use the following strict JSON schema:
       resumeId: resume.id,
       versionNumber: 1,
       extractedText: text,
-      atsScore: aiData.atsScore || 70,
+      atsScore: aiData.atsScore || 0,
+      hiringReadiness: aiData.hiringReadiness || 0,
+      experienceLevel: aiData.candidateLevel || "Fresher",
       aiSuggestions: aiData,
       projects: aiData.projects || [],
       experience: aiData.experience || [],
     }).returning();
 
     res.json({ success: true, data: { resumeId: resume.id, versionId: version.id, ...aiData } });
-  } catch (error) {
-    console.error("Upload error:", error);
-    res.status(500).json({ success: false, error: "Failed to process resume" });
+  } catch (error: any) {
+    console.error("Upload route completely failed:", error);
+    res.status(500).json({ success: false, error: error.message || "Failed to process resume" });
   }
 });
 
@@ -251,22 +293,37 @@ router.get("/resumes/:userId", async (req, res) => {
     const formatted = resumes.map(r => {
       const v = r.versions[0];
       const ai = (v?.aiSuggestions as any) || {};
+      const qa = ai.qualityAnalysis || {};
+      const sug = ai.suggestions || {};
+      
+      // Ensure arrays and objects exist to prevent frontend crash
+      const priorityImprovements = Array.isArray(sug.priorityImprovements) 
+        ? sug.priorityImprovements 
+        : Array.isArray(sug) ? sug : [];
+
       return {
         _id: r.id,
         fileName: r.title,
         versionNumber: v?.versionNumber || 1,
         createdAt: r.createdAt,
-        experienceLevel: "Mid-Level",
+        experienceLevel: v?.experienceLevel || "Fresher",
         atsScore: v?.atsScore || 0,
-        qualityAnalysis: ai.qualityAnalysis || {},
-        aiAnalysis: {
-          hiringReadinessScore: ai.qualityAnalysis?.recruiterFriendliness || 0,
-          recruiterSummary: ai.suggestions?.[0] || "Strong candidate."
+        qualityAnalysis: {
+          structure: qa.structure || 0,
+          readability: qa.readability || 0,
+          technicalDepth: qa.technicalDepth || 0,
+          achievementOrientation: qa.achievementOrientation || 0,
+          keywordOptimization: qa.keywordOptimization || 0,
+          recruiterFriendliness: qa.recruiterFriendliness || 0
         },
-        suggestions: ai.suggestions || [],
+        aiAnalysis: {
+          hiringReadinessScore: v?.hiringReadiness || 0,
+          recruiterSummary: sug.strengths?.[0] || priorityImprovements[0] || "Analysis completed."
+        },
+        suggestions: priorityImprovements,
         extractedSkills: ai.extractedSkills || {},
         skills: ai.skills || [],
-        experience: v?.experience || []
+        experience: v?.experience || ai.experience || []
       };
     });
     

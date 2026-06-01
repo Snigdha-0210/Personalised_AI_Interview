@@ -41,6 +41,8 @@ export const resumeVersions = pgTable('resume_versions', {
   fileMetadata: jsonb('file_metadata'),
   extractedText: text('extracted_text').notNull(),
   atsScore: integer('ats_score'),
+  hiringReadiness: integer('hiring_readiness'),
+  experienceLevel: text('experience_level'),
   aiSuggestions: jsonb('ai_suggestions').default('[]'),
   projects: jsonb('projects').default('[]'),
   experience: jsonb('experience').default('[]'),

@@ -74,8 +74,7 @@ function ResumePage() {
   const [isMapping, setIsMapping] = useState(false);
   const [roadmapData, setRoadmapData] = useState<any>(null);
   const [targetRole, setTargetRole] = useState("Software Engineer");
-
-
+  const [uploadingText, setUploadingText] = useState("Uploading Resume...");
 
   const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     console.log("File selection triggered.");
@@ -86,13 +85,35 @@ function ResumePage() {
     const file = e.target.files[0];
     console.log("File selected:", file.name, "Type:", file.type);
     
+    if (file.size > 10 * 1024 * 1024) {
+      toast.error("PDF too large. Maximum size is 10MB.");
+      return;
+    }
+
     if (!file.type.includes("pdf") && !file.name.toLowerCase().endsWith(".pdf")) {
       console.error("Invalid file type. Found:", file.type);
-      toast.error("Only PDF files are supported right now.");
+      toast.error("Invalid file type. Only PDF files are supported.");
       return;
     }
 
     setUploading(true);
+    setUploadingText("Uploading Resume...");
+    
+    const messages = [
+      "Extracting Text...",
+      "Analyzing Resume...",
+      "Generating Insights...",
+      "Saving Results..."
+    ];
+    
+    let msgIndex = 0;
+    const interval = setInterval(() => {
+      if (msgIndex < messages.length) {
+        setUploadingText(messages[msgIndex]);
+        msgIndex++;
+      }
+    }, 1500);
+
     const formData = new FormData();
     formData.append("resume", file);
     formData.append("email", user?.email || "test@hiremind.com");
@@ -109,25 +130,23 @@ function ResumePage() {
       const data = await res.json();
       
       if (!res.ok || !data.success) {
-        throw new Error(data.error || "Upload failed");
+        throw new Error(data.error || "Analysis failed");
       }
 
-      toast.success("Resume analyzed successfully!");
-      await refreshResumes();
+      clearInterval(interval);
+      setUploadingText("Analysis Complete!");
       
-      setActiveTab("dashboard");
-      setMatchData(null);
-      setCoachFeedback(null);
+      toast.success("Resume analyzed successfully!");
+      await refreshResumes(); // Will refetch all and update activeResume logic
 
     } catch (err: any) {
       console.error(err);
-      toast.error(err.message || "Failed to process resume.");
+      clearInterval(interval);
+      toast.error(err.message || "Upload failed");
     } finally {
-      setUploading(false);
+      setTimeout(() => setUploading(false), 500);
     }
   };
-
-
 
   const runCoach = async () => {
     if (!activeResume) return;
@@ -233,7 +252,9 @@ function ResumePage() {
                 <div className="absolute inset-0 rounded-full blur-xl bg-primary/30 animate-pulse"></div>
                 <BrainCircuit className="w-12 h-12 text-primary animate-bounce relative z-10" />
               </div>
-              <h3 className="text-xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-primary to-purple-500">Gemini 2.0 Flash is analyzing your resume...</h3>
+              <h3 className="text-xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-primary to-purple-500 animate-pulse">
+                {uploadingText}
+              </h3>
               <p className="text-sm text-muted-foreground mt-2 max-w-md mx-auto">Extracting skills, predicting interview readiness, formatting radar charts, and drafting your recruiter summary.</p>
             </div>
           ) : (
