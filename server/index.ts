@@ -433,6 +433,8 @@ app.post("/api/interview/:id/panel-grade", async (req, res) => {
 });
 
 // Default endpoints for users without a resume
+app.get("/api/health", (req, res) => res.json({ status: "ok", time: Date.now() }));
+
 app.post("/api/interview/default/start", async (req, res) => {
   try {
     const profileContext = `
