@@ -14,6 +14,7 @@ import { Route as LoginRouteImport } from './routes/login'
 import { Route as AuthenticatedRouteImport } from './routes/_authenticated'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as AuthenticatedResumeRouteImport } from './routes/_authenticated/resume'
+import { Route as AuthenticatedJdMatchRouteImport } from './routes/_authenticated/jd-match'
 import { Route as AuthenticatedDashboardRouteImport } from './routes/_authenticated/dashboard'
 
 const SignupRoute = SignupRouteImport.update({
@@ -40,6 +41,11 @@ const AuthenticatedResumeRoute = AuthenticatedResumeRouteImport.update({
   path: '/resume',
   getParentRoute: () => AuthenticatedRoute,
 } as any)
+const AuthenticatedJdMatchRoute = AuthenticatedJdMatchRouteImport.update({
+  id: '/jd-match',
+  path: '/jd-match',
+  getParentRoute: () => AuthenticatedRoute,
+} as any)
 const AuthenticatedDashboardRoute = AuthenticatedDashboardRouteImport.update({
   id: '/dashboard',
   path: '/dashboard',
@@ -51,6 +57,7 @@ export interface FileRoutesByFullPath {
   '/login': typeof LoginRoute
   '/signup': typeof SignupRoute
   '/dashboard': typeof AuthenticatedDashboardRoute
+  '/jd-match': typeof AuthenticatedJdMatchRoute
   '/resume': typeof AuthenticatedResumeRoute
 }
 export interface FileRoutesByTo {
@@ -58,6 +65,7 @@ export interface FileRoutesByTo {
   '/login': typeof LoginRoute
   '/signup': typeof SignupRoute
   '/dashboard': typeof AuthenticatedDashboardRoute
+  '/jd-match': typeof AuthenticatedJdMatchRoute
   '/resume': typeof AuthenticatedResumeRoute
 }
 export interface FileRoutesById {
@@ -67,13 +75,14 @@ export interface FileRoutesById {
   '/login': typeof LoginRoute
   '/signup': typeof SignupRoute
   '/_authenticated/dashboard': typeof AuthenticatedDashboardRoute
+  '/_authenticated/jd-match': typeof AuthenticatedJdMatchRoute
   '/_authenticated/resume': typeof AuthenticatedResumeRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/login' | '/signup' | '/dashboard' | '/resume'
+  fullPaths: '/' | '/login' | '/signup' | '/dashboard' | '/jd-match' | '/resume'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/login' | '/signup' | '/dashboard' | '/resume'
+  to: '/' | '/login' | '/signup' | '/dashboard' | '/jd-match' | '/resume'
   id:
     | '__root__'
     | '/'
@@ -81,6 +90,7 @@ export interface FileRouteTypes {
     | '/login'
     | '/signup'
     | '/_authenticated/dashboard'
+    | '/_authenticated/jd-match'
     | '/_authenticated/resume'
   fileRoutesById: FileRoutesById
 }
@@ -128,6 +138,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedResumeRouteImport
       parentRoute: typeof AuthenticatedRoute
     }
+    '/_authenticated/jd-match': {
+      id: '/_authenticated/jd-match'
+      path: '/jd-match'
+      fullPath: '/jd-match'
+      preLoaderRoute: typeof AuthenticatedJdMatchRouteImport
+      parentRoute: typeof AuthenticatedRoute
+    }
     '/_authenticated/dashboard': {
       id: '/_authenticated/dashboard'
       path: '/dashboard'
@@ -140,11 +157,13 @@ declare module '@tanstack/react-router' {
 
 interface AuthenticatedRouteChildren {
   AuthenticatedDashboardRoute: typeof AuthenticatedDashboardRoute
+  AuthenticatedJdMatchRoute: typeof AuthenticatedJdMatchRoute
   AuthenticatedResumeRoute: typeof AuthenticatedResumeRoute
 }
 
 const AuthenticatedRouteChildren: AuthenticatedRouteChildren = {
   AuthenticatedDashboardRoute: AuthenticatedDashboardRoute,
+  AuthenticatedJdMatchRoute: AuthenticatedJdMatchRoute,
   AuthenticatedResumeRoute: AuthenticatedResumeRoute,
 }
 
