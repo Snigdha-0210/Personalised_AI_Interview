@@ -6,6 +6,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { useState } from "react";
 import { useResumeContext } from "@/lib/ResumeContext";
 import { Send, Sparkles } from "lucide-react";
+import { panelGradeDefault } from "@/server/functions";
 
 export const Route = createFileRoute("/_authenticated/panel")({ component: Panel });
 
@@ -25,17 +26,28 @@ function Panel() {
     setPanel(p => p.map(x => ({ ...x, status: "active", feedback: "Evaluating..." })));
     
     try {
-      const url = activeResume ? `/api/interview/${activeResume._id}/panel-grade` : `/api/interview/default/panel-grade`;
-      const res = await fetch(url, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ transcript: answer })
-      });
-      const data = await res.json();
-      
-      if (data.success && data.data.evaluations) {
+      let evaluations = [];
+
+      if (!activeResume) {
+        const res = await panelGradeDefault({ data: { answer } });
+        if (res.success && res.data) {
+          evaluations = res.data.evaluations;
+        }
+      } else {
+        const res = await fetch(`/api/interview/${activeResume._id}/panel-grade`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ transcript: answer })
+        });
+        const data = await res.json();
+        if (data.success && data.data.evaluations) {
+          evaluations = data.data.evaluations;
+        }
+      }
+
+      if (evaluations.length > 0) {
         setPanel(p => p.map(x => {
-          const evalData = data.data.evaluations.find((e: any) => e.role === x.role);
+          const evalData = evaluations.find((e: any) => e.role === x.role);
           return evalData ? { ...x, score: evalData.score, feedback: evalData.feedback, status: "evaluated" } : x;
         }));
       }

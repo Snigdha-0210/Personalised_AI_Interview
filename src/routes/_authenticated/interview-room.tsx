@@ -5,6 +5,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Progress } from "@/components/ui/progress";
 import { useResumeContext } from "@/lib/ResumeContext";
 import type { Question } from "@/lib/mock-data";
+import { startDefaultInterview } from "@/server/functions";
 import {
   Mic, Send, Sparkles, Clock, TrendingUp, TrendingDown, Minus,
   ChevronRight, CheckCircle2, XCircle, Code2, Lightbulb, Info
@@ -257,19 +258,28 @@ function Room() {
   const currentDiff = diffHistory[diffHistory.length - 1].diff;
 
   useEffect(() => {
-    const url = activeResume ? `/api/interview/${activeResume._id}/start` : `/api/interview/default/start`;
-    fetch(url, { method: "POST" })
-      .then(res => res.json())
-      .then(data => {
-        if (data.success && data.data.questions) {
-          setQuestions(data.data.questions);
+    async function loadInterview() {
+      try {
+        if (!activeResume) {
+          console.log("No resume active, starting default interview via Server Function");
+          const res = await startDefaultInterview();
+          if (res.success && res.data) {
+            setQuestions(res.data);
+          }
+        } else {
+          const response = await fetch(`/api/interview/${activeResume._id}/start`, { method: "POST" });
+          const data = await response.json();
+          if (data.success && data.data.questions) {
+            setQuestions(data.data.questions);
+          }
         }
-        setLoading(false);
-      })
-      .catch(err => {
+      } catch (err) {
         console.error(err);
+      } finally {
         setLoading(false);
-      });
+      }
+    }
+    loadInterview();
   }, [activeResume]);
 
   useEffect(() => {
