@@ -1,6 +1,10 @@
 {
+  "builds": [
+    { "src": "server/index.ts", "use": "@vercel/node" },
+    { "src": "package.json", "use": "@vercel/vite" }
+  ],
   "rewrites": [
-    { "source": "/api/(.*)", "destination": "/api/index" },
+    { "source": "/api/(.*)", "destination": "/server/index.ts" },
     { "source": "/(.*)", "destination": "/index.html" }
   ]
 }
