@@ -15,6 +15,7 @@ import { Route as AuthenticatedRouteImport } from './routes/_authenticated'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as AuthenticatedSkillGapRouteImport } from './routes/_authenticated/skill-gap'
 import { Route as AuthenticatedResumeRouteImport } from './routes/_authenticated/resume'
+import { Route as AuthenticatedPanelRouteImport } from './routes/_authenticated/panel'
 import { Route as AuthenticatedJdMatchRouteImport } from './routes/_authenticated/jd-match'
 import { Route as AuthenticatedInterviewSetupRouteImport } from './routes/_authenticated/interview-setup'
 import { Route as AuthenticatedInterviewRoomRouteImport } from './routes/_authenticated/interview-room'
@@ -49,6 +50,11 @@ const AuthenticatedResumeRoute = AuthenticatedResumeRouteImport.update({
   path: '/resume',
   getParentRoute: () => AuthenticatedRoute,
 } as any)
+const AuthenticatedPanelRoute = AuthenticatedPanelRouteImport.update({
+  id: '/panel',
+  path: '/panel',
+  getParentRoute: () => AuthenticatedRoute,
+} as any)
 const AuthenticatedJdMatchRoute = AuthenticatedJdMatchRouteImport.update({
   id: '/jd-match',
   path: '/jd-match',
@@ -80,6 +86,7 @@ export interface FileRoutesByFullPath {
   '/interview-room': typeof AuthenticatedInterviewRoomRoute
   '/interview-setup': typeof AuthenticatedInterviewSetupRoute
   '/jd-match': typeof AuthenticatedJdMatchRoute
+  '/panel': typeof AuthenticatedPanelRoute
   '/resume': typeof AuthenticatedResumeRoute
   '/skill-gap': typeof AuthenticatedSkillGapRoute
 }
@@ -91,6 +98,7 @@ export interface FileRoutesByTo {
   '/interview-room': typeof AuthenticatedInterviewRoomRoute
   '/interview-setup': typeof AuthenticatedInterviewSetupRoute
   '/jd-match': typeof AuthenticatedJdMatchRoute
+  '/panel': typeof AuthenticatedPanelRoute
   '/resume': typeof AuthenticatedResumeRoute
   '/skill-gap': typeof AuthenticatedSkillGapRoute
 }
@@ -104,6 +112,7 @@ export interface FileRoutesById {
   '/_authenticated/interview-room': typeof AuthenticatedInterviewRoomRoute
   '/_authenticated/interview-setup': typeof AuthenticatedInterviewSetupRoute
   '/_authenticated/jd-match': typeof AuthenticatedJdMatchRoute
+  '/_authenticated/panel': typeof AuthenticatedPanelRoute
   '/_authenticated/resume': typeof AuthenticatedResumeRoute
   '/_authenticated/skill-gap': typeof AuthenticatedSkillGapRoute
 }
@@ -117,6 +126,7 @@ export interface FileRouteTypes {
     | '/interview-room'
     | '/interview-setup'
     | '/jd-match'
+    | '/panel'
     | '/resume'
     | '/skill-gap'
   fileRoutesByTo: FileRoutesByTo
@@ -128,6 +138,7 @@ export interface FileRouteTypes {
     | '/interview-room'
     | '/interview-setup'
     | '/jd-match'
+    | '/panel'
     | '/resume'
     | '/skill-gap'
   id:
@@ -140,6 +151,7 @@ export interface FileRouteTypes {
     | '/_authenticated/interview-room'
     | '/_authenticated/interview-setup'
     | '/_authenticated/jd-match'
+    | '/_authenticated/panel'
     | '/_authenticated/resume'
     | '/_authenticated/skill-gap'
   fileRoutesById: FileRoutesById
@@ -195,6 +207,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedResumeRouteImport
       parentRoute: typeof AuthenticatedRoute
     }
+    '/_authenticated/panel': {
+      id: '/_authenticated/panel'
+      path: '/panel'
+      fullPath: '/panel'
+      preLoaderRoute: typeof AuthenticatedPanelRouteImport
+      parentRoute: typeof AuthenticatedRoute
+    }
     '/_authenticated/jd-match': {
       id: '/_authenticated/jd-match'
       path: '/jd-match'
@@ -231,6 +250,7 @@ interface AuthenticatedRouteChildren {
   AuthenticatedInterviewRoomRoute: typeof AuthenticatedInterviewRoomRoute
   AuthenticatedInterviewSetupRoute: typeof AuthenticatedInterviewSetupRoute
   AuthenticatedJdMatchRoute: typeof AuthenticatedJdMatchRoute
+  AuthenticatedPanelRoute: typeof AuthenticatedPanelRoute
   AuthenticatedResumeRoute: typeof AuthenticatedResumeRoute
   AuthenticatedSkillGapRoute: typeof AuthenticatedSkillGapRoute
 }
@@ -240,6 +260,7 @@ const AuthenticatedRouteChildren: AuthenticatedRouteChildren = {
   AuthenticatedInterviewRoomRoute: AuthenticatedInterviewRoomRoute,
   AuthenticatedInterviewSetupRoute: AuthenticatedInterviewSetupRoute,
   AuthenticatedJdMatchRoute: AuthenticatedJdMatchRoute,
+  AuthenticatedPanelRoute: AuthenticatedPanelRoute,
   AuthenticatedResumeRoute: AuthenticatedResumeRoute,
   AuthenticatedSkillGapRoute: AuthenticatedSkillGapRoute,
 }
