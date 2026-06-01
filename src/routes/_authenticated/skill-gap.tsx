@@ -1,58 +1,109 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { PageHeader } from "@/components/AppLayout";
-import { BookOpen, Zap, CheckCircle2 } from "lucide-react";
+import { Zap, Target, AlertTriangle, ShieldCheck, Map } from "lucide-react";
+import { useResumeContext } from "@/lib/ResumeContext";
 
 export const Route = createFileRoute("/_authenticated/skill-gap")({ component: SkillGap });
 
-const weeks = [
-  { w: "Week 1", focus: "System Design Foundations", items: ["Load balancing patterns", "Caching layers (Redis, CDN)", "Database scaling (read replicas, sharding)"], hours: 8 },
-  { w: "Week 2", focus: "Kubernetes & Containers", items: ["Pods, Deployments, Services", "Helm + GitOps basics", "Hands-on: deploy a 3-tier app"], hours: 10 },
-  { w: "Week 3", focus: "GraphQL & API Design", items: ["Schema design + resolvers", "DataLoader & N+1 prevention", "Federation overview"], hours: 7 },
-  { w: "Week 4", focus: "Mock Interviews & Review", items: ["3 timed system-design rounds", "2 behavioral STAR drills", "Final readiness assessment"], hours: 9 },
-];
-
 function SkillGap() {
+  const { activeResume } = useResumeContext();
+
+  const gapData = activeResume?.skillGapSnapshot;
+
+  if (!activeResume) {
+    return (
+      <>
+        <PageHeader title="Skill Gap Intelligence" description="Identify exactly what separates you from your target role." />
+        <div className="p-8 flex flex-col items-center justify-center min-h-[50vh] text-center border-2 border-dashed border-border rounded-2xl m-8">
+          <Map className="w-12 h-12 text-muted-foreground mb-4" />
+          <h3 className="font-semibold text-lg">No Resume Found</h3>
+          <p className="text-muted-foreground text-sm">Please upload a resume in the Overview tab to generate a Skill Gap analysis.</p>
+        </div>
+      </>
+    );
+  }
+
+  if (!gapData) {
+    return (
+      <>
+        <PageHeader title="Skill Gap Intelligence" description="Identify exactly what separates you from your target role." />
+        <div className="p-8 flex flex-col items-center justify-center min-h-[50vh] text-center border-2 border-dashed border-border rounded-2xl m-8">
+          <Zap className="w-12 h-12 text-muted-foreground mb-4 opacity-50" />
+          <h3 className="font-semibold text-lg">No Gap Analysis Available</h3>
+          <p className="text-muted-foreground text-sm mt-2 max-w-md mx-auto">
+            We haven't generated a gap analysis for this resume yet. Head over to the <strong>Career Roadmap</strong> tab and generate a roadmap to populate this data.
+          </p>
+        </div>
+      </>
+    );
+  }
+
+  const { gapAnalysis, gapSeverity } = gapData;
+
   return (
     <>
-      <PageHeader title="Skill Gap Roadmap" description="A focused 4-week plan to close the gaps that block your next role." />
-      <div className="p-8 space-y-6">
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          {[
-            { label: "Priority Gaps", v: "4", icon: Zap, accent: "bg-warning/10 text-warning" },
-            { label: "Plan Length", v: "4 weeks", icon: BookOpen, accent: "bg-primary/10 text-primary" },
-            { label: "Estimated Lift", v: "+14 pts", icon: CheckCircle2, accent: "bg-success/10 text-success" },
-          ].map((s) => (
-            <div key={s.label} className="rounded-2xl bg-card border border-border p-5 shadow-card flex items-center gap-4">
-              <div className={`w-10 h-10 rounded-lg flex items-center justify-center ${s.accent}`}><s.icon className="w-5 h-5" /></div>
-              <div><div className="text-xl font-semibold">{s.v}</div><div className="text-xs text-muted-foreground">{s.label}</div></div>
+      <PageHeader title="Skill Gap Intelligence" description="Identify exactly what separates you from your target role based on your latest AI Roadmap scan." />
+      <div className="p-8 space-y-6 max-w-[1200px] mx-auto animate-in fade-in slide-in-from-bottom-4 duration-500">
+        
+        {/* Top Stats */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div className="rounded-2xl bg-card border border-border p-6 shadow-card flex items-center gap-6">
+            <div className={`w-14 h-14 rounded-full flex items-center justify-center shrink-0 ${
+              gapSeverity?.level === 'High' ? 'bg-destructive/10 text-destructive' : 
+              gapSeverity?.level === 'Medium' ? 'bg-warning/10 text-warning' : 
+              'bg-success/10 text-success'
+            }`}>
+              <AlertTriangle className="w-6 h-6" />
             </div>
-          ))}
+            <div>
+              <div className="text-sm font-semibold uppercase tracking-wider text-muted-foreground">Gap Severity</div>
+              <div className="text-2xl font-black">{gapSeverity?.level || "Unknown"}</div>
+              <div className="text-sm text-muted-foreground mt-1 line-clamp-2">{gapSeverity?.reasoning}</div>
+            </div>
+          </div>
         </div>
 
+        {/* Diagnostic Grid */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          {weeks.map((wk, i) => (
-            <div key={wk.w} className="rounded-2xl bg-card border border-border p-6 shadow-card">
-              <div className="flex items-center justify-between">
-                <div>
-                  <div className="text-xs font-medium text-primary uppercase tracking-wider">{wk.w}</div>
-                  <h3 className="font-semibold mt-1">{wk.focus}</h3>
-                </div>
-                <span className="text-xs px-2 py-1 rounded-full bg-muted">{wk.hours}h</span>
-              </div>
-              <ol className="mt-4 space-y-2">
-                {wk.items.map((it, idx) => (
-                  <li key={idx} className="flex gap-3 text-sm">
-                    <span className="w-5 h-5 shrink-0 rounded-full bg-primary/10 text-primary text-xs font-semibold flex items-center justify-center">{idx + 1}</span>
-                    {it}
-                  </li>
-                ))}
-              </ol>
-              <div className="mt-4 pt-4 border-t border-border flex items-center justify-between text-xs text-muted-foreground">
-                <span>Difficulty: {["Easy", "Medium", "Medium", "Hard"][i]}</span>
-                <span>3 resources · 2 drills</span>
+          
+          {/* Missing & Critical */}
+          <div className="space-y-6">
+            <div className="rounded-2xl bg-destructive/5 border border-destructive/20 p-6 shadow-sm">
+              <h3 className="font-bold text-destructive mb-4 flex items-center gap-2"><Target className="w-5 h-5" /> Critical Missing Skills</h3>
+              <p className="text-sm text-destructive/80 mb-4">You must acquire these skills immediately as they are hard requirements for your target role.</p>
+              <div className="flex flex-wrap gap-2">
+                {gapAnalysis?.critical?.length ? gapAnalysis.critical.map((s: string, i: number) => (
+                  <span key={i} className="bg-destructive text-destructive-foreground px-3 py-1.5 rounded-md text-sm font-semibold shadow-sm">{s}</span>
+                )) : <span className="text-sm italic">No critical gaps detected!</span>}
               </div>
             </div>
-          ))}
+
+            <div className="rounded-2xl bg-card border border-border p-6 shadow-sm">
+              <h3 className="font-bold mb-4 flex items-center gap-2"><Zap className="w-5 h-5 text-warning" /> Weak Skills / Needs Focus</h3>
+              <p className="text-sm text-muted-foreground mb-4">You have partial knowledge, but need more depth to pass technical interviews.</p>
+              <div className="flex flex-wrap gap-2">
+                {gapAnalysis?.weak?.length ? gapAnalysis.weak.map((s: string, i: number) => (
+                  <span key={i} className="bg-warning/10 text-warning-foreground border border-warning/20 px-3 py-1.5 rounded-md text-sm font-medium">{s}</span>
+                )) : <span className="text-sm italic text-muted-foreground">No weak skills detected.</span>}
+              </div>
+            </div>
+          </div>
+
+          {/* Existing / Strengths */}
+          <div className="space-y-6">
+            <div className="rounded-2xl bg-card border border-border p-6 shadow-sm h-full flex flex-col">
+              <h3 className="font-bold mb-4 flex items-center gap-2"><ShieldCheck className="w-5 h-5 text-success" /> Validated Strengths</h3>
+              <p className="text-sm text-muted-foreground mb-4">These are skills you already possess that align perfectly with your target role. Emphasize these in interviews.</p>
+              <div className="flex-1">
+                <div className="flex flex-wrap gap-2">
+                  {gapAnalysis?.existing?.length ? gapAnalysis.existing.map((s: string, i: number) => (
+                    <span key={i} className="bg-success/10 text-success border border-success/20 px-3 py-1.5 rounded-md text-sm font-medium">{s}</span>
+                  )) : <span className="text-sm italic text-muted-foreground">No matching strengths recorded.</span>}
+                </div>
+              </div>
+            </div>
+          </div>
+
         </div>
       </div>
     </>

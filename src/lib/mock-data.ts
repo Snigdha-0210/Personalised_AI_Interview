@@ -84,3 +84,20 @@ export const weekly = [
   { day: "Sat", interviews: 1, score: 86 },
   { day: "Sun", interviews: 0, score: 0 },
 ];
+
+export type Question = { id: number; q: string; difficulty: string; skill: string; type?: string; source?: string; };
+
+export const careerTracks = [
+  { id: 1, title: "Frontend Engineer", level: "Senior", match: 92, status: "Ready" },
+  { id: 2, title: "Full Stack Engineer", level: "Mid", match: 78, status: "Gap: System Design" },
+  { id: 3, title: "Engineering Manager", level: "Lead", match: 65, status: "Gap: Leadership" },
+];
+
+export const recruiterSession = {
+  candidate: "Jane Doe", role: "Senior Frontend Engineer", status: "In Progress", duration: "12:45"
+};
+
+export const voiceQuestions = [
+  { id: 1, q: "Tell me about yourself.", time: "2:00" },
+  { id: 2, q: "Why do you want to work here?", time: "2:00" },
+];

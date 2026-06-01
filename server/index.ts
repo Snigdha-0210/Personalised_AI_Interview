@@ -1,0 +1,287 @@
+import express from "express";
+import cors from "cors";
+import mongoose from "mongoose";
+import { MongoMemoryServer } from "mongodb-memory-server";
+import dotenv from "dotenv";
+import multer from "multer";
+const pdfParse = require("pdf-parse");
+import { User, Resume, JobDescription, Session, Answer } from "./models";
+import * as ai from "./IntelligenceService";
+
+dotenv.config();
+
+const app = express();
+const PORT = process.env.PORT || 3001;
+
+// Middleware
+app.use(cors());
+app.use(express.json());
+
+// File upload setup
+const storage = multer.memoryStorage();
+const upload = multer({ 
+  storage: storage,
+  limits: { fileSize: 10 * 1024 * 1024 }, // 10 MB limit
+  fileFilter: (req, file, cb) => {
+    if (file.mimetype === "application/pdf" || file.originalname.toLowerCase().endsWith(".pdf")) {
+      cb(null, true);
+    } else {
+      cb(new Error("Invalid PDF"));
+    }
+  }
+});
+
+// Database Connection
+async function connectDB() {
+  const MONGODB_URI = process.env.MONGODB_URI;
+
+  try {
+    if (MONGODB_URI) {
+      await mongoose.connect(MONGODB_URI);
+      console.log("✅ Connected to MongoDB (External)");
+    } else {
+      console.log("⚠️ No MONGODB_URI found. Starting in-memory MongoDB...");
+      const mongoServer = await MongoMemoryServer.create();
+      const memoryUri = mongoServer.getUri();
+      await mongoose.connect(memoryUri);
+      console.log("✅ Connected to MongoDB (In-Memory Fallback)");
+    }
+  } catch (err) {
+    console.error("❌ MongoDB connection error:", err);
+  }
+}
+connectDB();
+
+
+// --- API Routes ---
+
+// Health Check
+app.get("/api/health", (req, res) => {
+  res.json({ status: "ok", message: "HireMind API is running" });
+});
+
+// Users
+app.post("/api/users", async (req, res) => {
+  try {
+    const user = new User(req.body);
+    await user.save();
+    res.status(201).json(user);
+  } catch (error: any) {
+    res.status(400).json({ error: error.message });
+  }
+});
+
+app.get("/api/users/:email", async (req, res) => {
+  try {
+    const user = await User.findOne({ email: req.params.email });
+    if (!user) return res.status(404).json({ error: "User not found" });
+    res.json(user);
+  } catch (error: any) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+
+// --- Resumes (Priority 1: Production-Grade) ---
+
+const SKILL_DICTIONARIES = {
+  languages: ["java", "python", "javascript", "typescript", "c++", "go", "rust"],
+  frontend: ["react", "next.js", "angular", "vue", "tailwind", "html", "css"],
+  backend: ["node.js", "express", "spring boot", "django", "flask"],
+  databases: ["mongodb", "postgresql", "mysql", "redis"],
+  devops: ["docker", "kubernetes", "aws", "azure", "gcp", "ci/cd"]
+};
+
+// Upload and Parse Resume
+app.post("/api/resumes/upload", (req, res, next) => {
+  console.log("--> [1/5] Received Resume Upload Request");
+  upload.single("resume")(req, res, (err) => {
+    if (err) {
+      console.error("❌ [1/5] Multer Upload Error:", err.message);
+      if (err.message === "Invalid PDF") return res.status(400).json({ success: false, error: "Invalid PDF format" });
+      if (err.code === "LIMIT_FILE_SIZE") return res.status(400).json({ success: false, error: "File exceeds 10MB limit" });
+      return res.status(500).json({ success: false, error: "File upload failed" });
+    }
+    next();
+  });
+}, async (req, res) => {
+  try {
+    if (!req.file) {
+      console.error("❌ [1/5] No file in request payload.");
+      return res.status(400).json({ success: false, error: "No resume file uploaded" });
+    }
+
+    console.log(`--> [2/5] Parsing PDF file (${req.file.originalname})...`);
+    // Parse PDF
+    const data = await pdfParse(req.file.buffer);
+    const rawText = data.text;
+    const cleanedText = rawText.replace(/\s+/g, " ").trim();
+    
+    if (!cleanedText) {
+      throw new Error("Unable to extract text from PDF. The file may be image-based or corrupted.");
+    }
+    console.log(`✅ [2/5] PDF Parsed successfully. Extracted ${cleanedText.length} characters.`);
+
+    console.log("--> [3/5] Triggering Gemini AI Deep Analysis...");
+    // 1. Call Gemini AI for Deep Analysis
+    const aiResult = await ai.analyzeResume(cleanedText);
+    console.log("✅ [3/5] Gemini AI Analysis Completed.");
+
+    console.log("--> [4/5] Looking up User Session...");
+    // User lookup/creation
+    const userEmail = req.body.email || "test@hiremind.com";
+    let user = await User.findOne({ email: userEmail });
+    if (!user) {
+      user = new User({ email: userEmail, name: "Test User", careerTrack: "Software Engineer" });
+      await user.save();
+    }
+
+    // Determine Version Number
+    const previousVersions = await Resume.countDocuments({ userId: user._id });
+    const versionNumber = previousVersions + 1;
+
+    console.log(`--> [5/5] Saving Resume Data to MongoDB as Version ${versionNumber}...`);
+    // Save Resume with AI outputs
+    const resume = new Resume({
+      userId: user._id,
+      versionNumber: versionNumber,
+      fileName: req.file.originalname,
+      rawText: rawText,
+      cleanedText: cleanedText,
+      extractedData: aiResult.extractedData,
+      aiAnalysis: aiResult.aiAnalysis,
+      // Fallback/Legacy mappings
+      extractedSkills: aiResult.extractedData?.skills,
+      experienceLevel: aiResult.backwardCompatibility?.experienceLevel || "Mid-Level",
+      atsScore: aiResult.aiAnalysis?.atsReadinessScore || 0,
+      qualityAnalysis: {
+        structure: aiResult.aiAnalysis?.projectQualityScore || 0,
+        readability: aiResult.aiAnalysis?.experienceQualityScore || 0,
+        technicalDepth: aiResult.aiAnalysis?.technicalStrengthScore || 0,
+        achievementOrientation: aiResult.aiAnalysis?.projectQualityScore || 0,
+        keywordOptimization: aiResult.aiAnalysis?.atsReadinessScore || 0,
+        recruiterFriendliness: aiResult.aiAnalysis?.hiringReadinessScore || 0
+      },
+      suggestions: aiResult.backwardCompatibility?.suggestions || []
+    });
+
+    await resume.save();
+    console.log("✅ [5/5] Resume saved successfully to database!");
+
+    res.json({ success: true, resume });
+  } catch (error: any) {
+    console.error("❌ Pipeline Error:", error);
+    res.status(500).json({ 
+      success: false, 
+      error: error.message || "Failed to process resume." 
+    });
+  }
+});
+
+// Get Resume Version History
+app.get("/api/resumes/:userId", async (req, res) => {
+  try {
+    const resumes = await Resume.find({ userId: req.params.userId }).sort({ createdAt: -1 });
+    res.json({ success: true, data: resumes });
+  } catch (error: any) {
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
+// Compare two resume versions
+app.get("/api/resumes/compare/:id1/:id2", async (req, res) => {
+  try {
+    const [resume1, resume2] = await Promise.all([
+      Resume.findById(req.params.id1),
+      Resume.findById(req.params.id2)
+    ]);
+
+    if (!resume1 || !resume2) {
+      return res.status(404).json({ success: false, error: "One or both resumes not found" });
+    }
+
+    const r1Skills = Object.values(resume1.extractedSkills || {}).flat();
+    const r2Skills = Object.values(resume2.extractedSkills || {}).flat();
+
+    const newSkills = r2Skills.filter(s => !r1Skills.includes(s));
+    const removedSkills = r1Skills.filter(s => !r2Skills.includes(s));
+    const atsChange = resume2.atsScore - resume1.atsScore;
+
+    res.json({
+      success: true,
+      data: {
+        atsChange,
+        newSkills,
+        removedSkills,
+        improvement: atsChange > 0 ? "Improved" : atsChange < 0 ? "Declined" : "Unchanged"
+      }
+    });
+
+  } catch (error: any) {
+    res.status(500).json({ success: false, error: "Comparison failed" });
+  }
+});
+
+// --- On-Demand AI Endpoints ---
+
+app.post("/api/resumes/:id/coach", async (req, res) => {
+  try {
+    const resume = await Resume.findById(req.params.id);
+    if (!resume) return res.status(404).json({ success: false, error: "Resume not found" });
+    const feedback = await ai.coachResume(resume.cleanedText);
+    res.json({ success: true, data: feedback });
+  } catch (error: any) {
+    console.error("Coach AI failed:", error);
+    res.status(500).json({ success: false, error: "Coach AI failed" });
+  }
+});
+
+app.post("/api/resumes/:id/match", async (req, res) => {
+  try {
+    const resume = await Resume.findById(req.params.id);
+    if (!resume) return res.status(404).json({ success: false, error: "Resume not found" });
+    const match = await ai.matchJobDescription(resume.cleanedText, req.body.jdText || "");
+    resume.jdMatchSnapshot = match;
+    await resume.save();
+    res.json({ success: true, data: match, resume });
+  } catch (error: any) {
+    console.error("JD Match AI failed:", error);
+    res.status(500).json({ success: false, error: "JD Match AI failed: " + error.message });
+  }
+});
+
+app.post("/api/resumes/:id/roadmap", async (req, res) => {
+  try {
+    const resume = await Resume.findById(req.params.id);
+    if (!resume) return res.status(404).json({ success: false, error: "Resume not found" });
+    const roadmap = await ai.generateCareerRoadmap(resume.cleanedText, req.body.targetRole || "Software Engineer", req.body.jdText);
+    resume.roadmapSnapshot = roadmap;
+    resume.skillGapSnapshot = {
+      gapAnalysis: roadmap.gapAnalysis,
+      gapSeverity: roadmap.gapSeverity
+    };
+    await resume.save();
+    res.json({ success: true, data: roadmap, resume });
+  } catch (error: any) {
+    console.error("Roadmap AI failed:", error);
+    res.status(500).json({ success: false, error: "Roadmap AI failed" });
+  }
+});
+
+app.post("/api/resumes/:id/interview-prep", async (req, res) => {
+  try {
+    const resume = await Resume.findById(req.params.id);
+    if (!resume) return res.status(404).json({ success: false, error: "Resume not found" });
+    const prep = await ai.generateInterviewQuestions(resume.cleanedText, req.body.jdText || "General Software Engineer");
+    res.json({ success: true, data: prep });
+  } catch (error: any) {
+    console.error("Interview Prep AI failed:", error);
+    res.status(500).json({ success: false, error: "Interview Prep AI failed" });
+  }
+});
+
+
+// Start Server
+app.listen(PORT, () => {
+  console.log(`🚀 Server running on http://localhost:${PORT}`);
+});

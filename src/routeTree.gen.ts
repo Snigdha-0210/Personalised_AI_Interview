@@ -13,10 +13,13 @@ import { Route as SignupRouteImport } from './routes/signup'
 import { Route as LoginRouteImport } from './routes/login'
 import { Route as AuthenticatedRouteImport } from './routes/_authenticated'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as AuthenticatedVoiceInterviewRouteImport } from './routes/_authenticated/voice-interview'
 import { Route as AuthenticatedSkillGapRouteImport } from './routes/_authenticated/skill-gap'
 import { Route as AuthenticatedSettingsRouteImport } from './routes/_authenticated/settings'
+import { Route as AuthenticatedRoadmapRouteImport } from './routes/_authenticated/roadmap'
 import { Route as AuthenticatedResumeRouteImport } from './routes/_authenticated/resume'
 import { Route as AuthenticatedResultsRouteImport } from './routes/_authenticated/results'
+import { Route as AuthenticatedRecruiterRouteImport } from './routes/_authenticated/recruiter'
 import { Route as AuthenticatedPanelRouteImport } from './routes/_authenticated/panel'
 import { Route as AuthenticatedJdMatchRouteImport } from './routes/_authenticated/jd-match'
 import { Route as AuthenticatedInterviewSetupRouteImport } from './routes/_authenticated/interview-setup'
@@ -46,6 +49,12 @@ const IndexRoute = IndexRouteImport.update({
   path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
+const AuthenticatedVoiceInterviewRoute =
+  AuthenticatedVoiceInterviewRouteImport.update({
+    id: '/voice-interview',
+    path: '/voice-interview',
+    getParentRoute: () => AuthenticatedRoute,
+  } as any)
 const AuthenticatedSkillGapRoute = AuthenticatedSkillGapRouteImport.update({
   id: '/skill-gap',
   path: '/skill-gap',
@@ -56,6 +65,11 @@ const AuthenticatedSettingsRoute = AuthenticatedSettingsRouteImport.update({
   path: '/settings',
   getParentRoute: () => AuthenticatedRoute,
 } as any)
+const AuthenticatedRoadmapRoute = AuthenticatedRoadmapRouteImport.update({
+  id: '/roadmap',
+  path: '/roadmap',
+  getParentRoute: () => AuthenticatedRoute,
+} as any)
 const AuthenticatedResumeRoute = AuthenticatedResumeRouteImport.update({
   id: '/resume',
   path: '/resume',
@@ -64,6 +78,11 @@ const AuthenticatedResumeRoute = AuthenticatedResumeRouteImport.update({
 const AuthenticatedResultsRoute = AuthenticatedResultsRouteImport.update({
   id: '/results',
   path: '/results',
+  getParentRoute: () => AuthenticatedRoute,
+} as any)
+const AuthenticatedRecruiterRoute = AuthenticatedRecruiterRouteImport.update({
+  id: '/recruiter',
+  path: '/recruiter',
   getParentRoute: () => AuthenticatedRoute,
 } as any)
 const AuthenticatedPanelRoute = AuthenticatedPanelRouteImport.update({
@@ -127,10 +146,13 @@ export interface FileRoutesByFullPath {
   '/interview-setup': typeof AuthenticatedInterviewSetupRoute
   '/jd-match': typeof AuthenticatedJdMatchRoute
   '/panel': typeof AuthenticatedPanelRoute
+  '/recruiter': typeof AuthenticatedRecruiterRoute
   '/results': typeof AuthenticatedResultsRoute
   '/resume': typeof AuthenticatedResumeRoute
+  '/roadmap': typeof AuthenticatedRoadmapRoute
   '/settings': typeof AuthenticatedSettingsRoute
   '/skill-gap': typeof AuthenticatedSkillGapRoute
+  '/voice-interview': typeof AuthenticatedVoiceInterviewRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -145,10 +167,13 @@ export interface FileRoutesByTo {
   '/interview-setup': typeof AuthenticatedInterviewSetupRoute
   '/jd-match': typeof AuthenticatedJdMatchRoute
   '/panel': typeof AuthenticatedPanelRoute
+  '/recruiter': typeof AuthenticatedRecruiterRoute
   '/results': typeof AuthenticatedResultsRoute
   '/resume': typeof AuthenticatedResumeRoute
+  '/roadmap': typeof AuthenticatedRoadmapRoute
   '/settings': typeof AuthenticatedSettingsRoute
   '/skill-gap': typeof AuthenticatedSkillGapRoute
+  '/voice-interview': typeof AuthenticatedVoiceInterviewRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -165,10 +190,13 @@ export interface FileRoutesById {
   '/_authenticated/interview-setup': typeof AuthenticatedInterviewSetupRoute
   '/_authenticated/jd-match': typeof AuthenticatedJdMatchRoute
   '/_authenticated/panel': typeof AuthenticatedPanelRoute
+  '/_authenticated/recruiter': typeof AuthenticatedRecruiterRoute
   '/_authenticated/results': typeof AuthenticatedResultsRoute
   '/_authenticated/resume': typeof AuthenticatedResumeRoute
+  '/_authenticated/roadmap': typeof AuthenticatedRoadmapRoute
   '/_authenticated/settings': typeof AuthenticatedSettingsRoute
   '/_authenticated/skill-gap': typeof AuthenticatedSkillGapRoute
+  '/_authenticated/voice-interview': typeof AuthenticatedVoiceInterviewRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -185,10 +213,13 @@ export interface FileRouteTypes {
     | '/interview-setup'
     | '/jd-match'
     | '/panel'
+    | '/recruiter'
     | '/results'
     | '/resume'
+    | '/roadmap'
     | '/settings'
     | '/skill-gap'
+    | '/voice-interview'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -203,10 +234,13 @@ export interface FileRouteTypes {
     | '/interview-setup'
     | '/jd-match'
     | '/panel'
+    | '/recruiter'
     | '/results'
     | '/resume'
+    | '/roadmap'
     | '/settings'
     | '/skill-gap'
+    | '/voice-interview'
   id:
     | '__root__'
     | '/'
@@ -222,10 +256,13 @@ export interface FileRouteTypes {
     | '/_authenticated/interview-setup'
     | '/_authenticated/jd-match'
     | '/_authenticated/panel'
+    | '/_authenticated/recruiter'
     | '/_authenticated/results'
     | '/_authenticated/resume'
+    | '/_authenticated/roadmap'
     | '/_authenticated/settings'
     | '/_authenticated/skill-gap'
+    | '/_authenticated/voice-interview'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -265,6 +302,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/_authenticated/voice-interview': {
+      id: '/_authenticated/voice-interview'
+      path: '/voice-interview'
+      fullPath: '/voice-interview'
+      preLoaderRoute: typeof AuthenticatedVoiceInterviewRouteImport
+      parentRoute: typeof AuthenticatedRoute
+    }
     '/_authenticated/skill-gap': {
       id: '/_authenticated/skill-gap'
       path: '/skill-gap'
@@ -279,6 +323,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedSettingsRouteImport
       parentRoute: typeof AuthenticatedRoute
     }
+    '/_authenticated/roadmap': {
+      id: '/_authenticated/roadmap'
+      path: '/roadmap'
+      fullPath: '/roadmap'
+      preLoaderRoute: typeof AuthenticatedRoadmapRouteImport
+      parentRoute: typeof AuthenticatedRoute
+    }
     '/_authenticated/resume': {
       id: '/_authenticated/resume'
       path: '/resume'
@@ -291,6 +342,13 @@ declare module '@tanstack/react-router' {
       path: '/results'
       fullPath: '/results'
       preLoaderRoute: typeof AuthenticatedResultsRouteImport
+      parentRoute: typeof AuthenticatedRoute
+    }
+    '/_authenticated/recruiter': {
+      id: '/_authenticated/recruiter'
+      path: '/recruiter'
+      fullPath: '/recruiter'
+      preLoaderRoute: typeof AuthenticatedRecruiterRouteImport
       parentRoute: typeof AuthenticatedRoute
     }
     '/_authenticated/panel': {
@@ -369,10 +427,13 @@ interface AuthenticatedRouteChildren {
   AuthenticatedInterviewSetupRoute: typeof AuthenticatedInterviewSetupRoute
   AuthenticatedJdMatchRoute: typeof AuthenticatedJdMatchRoute
   AuthenticatedPanelRoute: typeof AuthenticatedPanelRoute
+  AuthenticatedRecruiterRoute: typeof AuthenticatedRecruiterRoute
   AuthenticatedResultsRoute: typeof AuthenticatedResultsRoute
   AuthenticatedResumeRoute: typeof AuthenticatedResumeRoute
+  AuthenticatedRoadmapRoute: typeof AuthenticatedRoadmapRoute
   AuthenticatedSettingsRoute: typeof AuthenticatedSettingsRoute
   AuthenticatedSkillGapRoute: typeof AuthenticatedSkillGapRoute
+  AuthenticatedVoiceInterviewRoute: typeof AuthenticatedVoiceInterviewRoute
 }
 
 const AuthenticatedRouteChildren: AuthenticatedRouteChildren = {
@@ -385,10 +446,13 @@ const AuthenticatedRouteChildren: AuthenticatedRouteChildren = {
   AuthenticatedInterviewSetupRoute: AuthenticatedInterviewSetupRoute,
   AuthenticatedJdMatchRoute: AuthenticatedJdMatchRoute,
   AuthenticatedPanelRoute: AuthenticatedPanelRoute,
+  AuthenticatedRecruiterRoute: AuthenticatedRecruiterRoute,
   AuthenticatedResultsRoute: AuthenticatedResultsRoute,
   AuthenticatedResumeRoute: AuthenticatedResumeRoute,
+  AuthenticatedRoadmapRoute: AuthenticatedRoadmapRoute,
   AuthenticatedSettingsRoute: AuthenticatedSettingsRoute,
   AuthenticatedSkillGapRoute: AuthenticatedSkillGapRoute,
+  AuthenticatedVoiceInterviewRoute: AuthenticatedVoiceInterviewRoute,
 }
 
 const AuthenticatedRouteWithChildren = AuthenticatedRoute._addFileChildren(
@@ -404,3 +468,13 @@ const rootRouteChildren: RootRouteChildren = {
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
+
+import type { getRouter } from './router.tsx'
+import type { startInstance } from './start.ts'
+declare module '@tanstack/react-start' {
+  interface Register {
+    ssr: true
+    router: Awaited<ReturnType<typeof getRouter>>
+    config: Awaited<ReturnType<typeof startInstance.getOptions>>
+  }
+}

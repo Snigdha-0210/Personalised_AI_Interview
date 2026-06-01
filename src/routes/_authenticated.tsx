@@ -2,6 +2,7 @@ import { createFileRoute, Outlet, useNavigate } from "@tanstack/react-router";
 import { useEffect } from "react";
 import { useAuth } from "@/lib/auth";
 import { AppLayout } from "@/components/AppLayout";
+import { ResumeProvider } from "@/lib/ResumeContext";
 
 export const Route = createFileRoute("/_authenticated")({ component: AuthGate });
 
@@ -15,5 +16,9 @@ function AuthGate() {
   if (loading || !user) {
     return <div className="min-h-screen flex items-center justify-center text-sm text-muted-foreground">Loading…</div>;
   }
-  return <AppLayout><Outlet /></AppLayout>;
+  return (
+    <ResumeProvider>
+      <AppLayout><Outlet /></AppLayout>
+    </ResumeProvider>
+  );
 }

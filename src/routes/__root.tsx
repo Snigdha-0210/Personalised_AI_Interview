@@ -79,16 +79,21 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
     meta: [
       { charSet: "utf-8" },
       { name: "viewport", content: "width=device-width, initial-scale=1" },
-      { title: "HireMind AI — Adaptive Interview Intelligence" },
-      { name: "description", content: "AI-powered mock interview platform with adaptive simulation, objective scoring, and explainable hiring decisions." },
+      { title: "HireMind AI — Interview Intelligence Operating System" },
+      { name: "description", content: "HireMind AI is a complete Interview Intelligence OS. Adaptive AI interviews, resume analysis, career roadmaps, voice interviews, and recruiter-grade analytics — all in one platform." },
       { name: "author", content: "HireMind AI" },
-      { property: "og:title", content: "HireMind AI" },
-      { property: "og:description", content: "Adaptive AI interviews, objective scoring, explainable decisions." },
+      { property: "og:title", content: "HireMind AI — Interview Intelligence OS" },
+      { property: "og:description", content: "Adaptive AI interviews, objective scoring, career roadmaps, voice AI, and explainable hiring decisions." },
       { property: "og:type", content: "website" },
-      { name: "twitter:card", content: "summary" },
-      { name: "twitter:site", content: "@Lovable" },
+      { name: "twitter:card", content: "summary_large_image" },
     ],
     links: [
+      { rel: "preconnect", href: "https://fonts.googleapis.com" },
+      { rel: "preconnect", href: "https://fonts.gstatic.com", crossOrigin: "anonymous" },
+      {
+        rel: "stylesheet",
+        href: "https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap",
+      },
       {
         rel: "stylesheet",
         href: appCss,
