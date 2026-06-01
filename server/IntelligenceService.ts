@@ -206,25 +206,108 @@ Return ONLY RAW VALID JSON:
   return JSON.parse(text);
 }
 
-export async function generateInterviewQuestions(resumeText: string, jdText: string) {
+export async function generateInterviewQuestions(profileContext: string) {
   const prompt = `
-You are a strict technical interviewer. Generate tailored interview questions based on the candidate's resume and the job description.
+You are an elite AI technical interviewer. Generate highly tailored, adaptive interview questions based on the candidate's complete profile context.
+You must generate a mix of question types (MCQ, Fill in the Blank, Subjective, Coding).
+Do NOT repeat any questions from the "Previously Asked Questions" list.
+Focus heavily on the "Identified Weaknesses" to probe their skill gaps.
 
-Resume:
+Candidate Profile Context:
 """
-${resumeText}
+${profileContext}
 """
-Job Description:
+
+Return ONLY RAW VALID JSON in this exact structure:
+{
+  "questions": [
+    { 
+      "id": 1, 
+      "type": "<MCQ | Subjective | Coding | Scenario>", 
+      "difficulty": "<Easy | Medium | Hard>", 
+      "skill": "...",
+      "q": "The actual question text...",
+      "options": ["A", "B", "C", "D"], // Only if MCQ
+      "correctAnswer": "..." // Expected answer or ideal points to cover
+    }
+  ]
+}
+`;
+  const groq = getAI();
+  const completion = await groq.chat.completions.create({
+    messages: [{ role: "user", content: prompt }],
+    model: "llama-3.3-70b-versatile",
+    response_format: { type: "json_object" },
+  });
+  let text = completion.choices[0]?.message?.content || "{}";
+  return JSON.parse(text);
+}
+
+export async function gradeInterview(transcript: string, role: string) {
+  const prompt = `
+You are a senior hiring manager. Grade this candidate's interview transcript for the role of ${role}.
+
+Transcript:
 """
-${jdText}
+${transcript}
 """
 
 Return ONLY RAW VALID JSON:
 {
-  "questions": [
-    { "type": "Technical", "difficulty": "Medium", "question": "..." },
-    { "type": "System Design", "difficulty": "Hard", "question": "..." },
-    { "type": "Behavioral", "difficulty": "Medium", "question": "..." }
+  "score": 85,
+  "recommendation": "<Hire | Strong Hire | Borderline | No Hire>",
+  "duration": "10m",
+  "feedback": [
+    { "aspect": "Technical Depth", "score": 85, "comments": "..." },
+    { "aspect": "Communication", "score": 90, "comments": "..." }
+  ],
+  "summary": "..."
+}
+`;
+  const groq = getAI();
+  const completion = await groq.chat.completions.create({
+    messages: [{ role: "user", content: prompt }],
+    model: "llama-3.3-70b-versatile",
+    response_format: { type: "json_object" },
+  });
+  let text = completion.choices[0]?.message?.content || "{}";
+  return JSON.parse(text);
+}
+
+export async function gradePanelInterview(transcript: string) {
+  const prompt = `
+You are simulating a 3-person interview panel consisting of:
+1. "Tech Lead": Evaluates Coding, Architecture, and Technical Concepts.
+2. "Engineering Manager": Evaluates Projects, Problem Solving, and Decision Making.
+3. "HR Recruiter": Evaluates Communication, Behavioral traits, and Culture Fit.
+
+Candidate Transcript:
+"""
+${transcript}
+"""
+
+Evaluate the transcript from all three perspectives simultaneously.
+Return ONLY RAW VALID JSON:
+{
+  "evaluations": [
+    {
+      "role": "Tech Lead",
+      "score": 85,
+      "feedback": "...",
+      "status": "active"
+    },
+    {
+      "role": "Engineering Manager",
+      "score": 88,
+      "feedback": "...",
+      "status": "active"
+    },
+    {
+      "role": "HR Recruiter",
+      "score": 92,
+      "feedback": "...",
+      "status": "active"
+    }
   ]
 }
 `;

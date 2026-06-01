@@ -16,7 +16,7 @@ use tower_http::cors::{Any, CorsLayer};
 mod models;
 mod ai;
 
-use models::{Resume, User};
+use models::{Resume, User, InterviewSession};
 
 #[derive(Clone)]
 struct AppState {
@@ -53,6 +53,9 @@ async fn main() {
         .route("/api/resumes/:id/roadmap", post(generate_roadmap))
         .route("/api/resumes/:id/interview-prep", post(generate_interview_prep))
         .route("/api/resumes/:id/coach", post(coach_resume))
+        .route("/api/interview/:id/start", post(start_interview))
+        .route("/api/interview/:id/grade", post(grade_interview))
+        .route("/api/recruiter/sessions", get(get_sessions))
         .layer(cors)
         .with_state(state);
 
@@ -299,4 +302,84 @@ async fn coach_resume(
         .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, e))?;
 
     Ok(Json(json!({ "success": true, "data": feedback })))
+}
+
+#[derive(serde::Deserialize)]
+struct StartInterviewRequest {
+    #[serde(rename = "jdText")]
+    jd_text: Option<String>,
+}
+
+async fn start_interview(
+    State(state): State<AppState>,
+    Path(id): Path<String>,
+    Json(payload): Json<StartInterviewRequest>,
+) -> Result<Json<Value>, (StatusCode, String)> {
+    let obj_id = mongodb::bson::oid::ObjectId::parse_str(&id).map_err(|_| (StatusCode::BAD_REQUEST, "Invalid ID".into()))?;
+    let coll: Collection<Resume> = state.db.collection("resumes");
+    let resume = coll.find_one(doc! { "_id": obj_id }, None).await.map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, e.to_string()))?
+        .ok_or((StatusCode::NOT_FOUND, "Resume not found".into()))?;
+
+    let jd = payload.jd_text.unwrap_or_else(|| "Software Engineer".into());
+    let questions_data = ai::generate_interview_questions(&resume.cleaned_text, &jd).await
+        .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, e))?;
+
+    Ok(Json(json!({ "success": true, "data": questions_data })))
+}
+
+#[derive(serde::Deserialize)]
+struct GradeInterviewRequest {
+    transcript: String,
+    role: String,
+}
+
+async fn grade_interview(
+    State(state): State<AppState>,
+    Path(id): Path<String>,
+    Json(payload): Json<GradeInterviewRequest>,
+) -> Result<Json<Value>, (StatusCode, String)> {
+    let obj_id = mongodb::bson::oid::ObjectId::parse_str(&id).map_err(|_| (StatusCode::BAD_REQUEST, "Invalid ID".into()))?;
+    let coll: Collection<Resume> = state.db.collection("resumes");
+    let resume = coll.find_one(doc! { "_id": obj_id }, None).await.map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, e.to_string()))?
+        .ok_or((StatusCode::NOT_FOUND, "Resume not found".into()))?;
+
+    let grade_result = ai::grade_interview(&payload.transcript, &payload.role).await
+        .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, e))?;
+
+    let session = InterviewSession {
+        id: None,
+        user_id: Some(resume.user_id),
+        resume_id: Some(obj_id),
+        date: Some(chrono::Utc::now().to_rfc3339()),
+        role: Some(payload.role.clone()),
+        interview_type: Some("Technical".into()),
+        score: grade_result.get("score").and_then(|v| v.as_i64()).map(|v| v as i32),
+        recommendation: grade_result.get("recommendation").and_then(|v| v.as_str()).map(|v| v.to_string()),
+        duration: grade_result.get("duration").and_then(|v| v.as_str()).map(|v| v.to_string()).or_else(|| Some("15m".into())),
+        transcript: Some(json!({ "raw": payload.transcript, "grade": grade_result })),
+    };
+
+    let sessions_coll: Collection<InterviewSession> = state.db.collection("interviews");
+    sessions_coll.insert_one(&session, None).await.map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, e.to_string()))?;
+
+    Ok(Json(json!({ "success": true, "data": grade_result })))
+}
+
+async fn get_sessions(
+    State(state): State<AppState>,
+) -> Result<Json<Value>, (StatusCode, String)> {
+    use futures::stream::StreamExt;
+    let coll: Collection<InterviewSession> = state.db.collection("interviews");
+    
+    let find_options = mongodb::options::FindOptions::builder().sort(doc! { "date": -1 }).build();
+    let mut cursor = coll.find(None, find_options).await.map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, e.to_string()))?;
+
+    let mut sessions = Vec::new();
+    while let Some(result) = cursor.next().await {
+        if let Ok(doc) = result {
+            sessions.push(doc);
+        }
+    }
+
+    Ok(Json(json!({ "success": true, "data": sessions })))
 }

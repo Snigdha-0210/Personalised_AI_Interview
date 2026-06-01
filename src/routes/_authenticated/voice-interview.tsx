@@ -1,7 +1,8 @@
 import { createFileRoute, useNavigate, Link } from "@tanstack/react-router";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
-import { voiceQuestions } from "@/lib/mock-data";
+import { useResumeContext } from "@/lib/ResumeContext";
+import type { Question } from "@/lib/mock-data";
 import { useState, useEffect, useRef } from "react";
 import {
   Mic, MicOff, Sparkles, Volume2, Clock, ChevronRight, ArrowLeft,
@@ -13,12 +14,7 @@ export const Route = createFileRoute("/_authenticated/voice-interview")({ compon
 
 type State = "idle" | "ai-speaking" | "listening" | "processing";
 
-const aiGreetings = [
-  "Welcome! I'm Sage, your AI interviewer. Let's begin. Please answer each question by speaking clearly. I'll evaluate your communication, confidence, and content.",
-  "Great, let's move to the next question. Take a moment to collect your thoughts before answering.",
-  "Excellent! Here's your next question. Remember, structure your answer with context, your actions, and the outcome.",
-  "You're doing well. One more question to go. This one focuses on your career vision.",
-];
+
 
 function WaveformBar({ active }: { active: boolean }) {
   return (
@@ -42,17 +38,85 @@ function WaveformBar({ active }: { active: boolean }) {
 
 function VoiceInterview() {
   const nav = useNavigate();
+  const { activeResume, profile } = useResumeContext();
+  const [questions, setQuestions] = useState<Question[]>([]);
+  const [loading, setLoading] = useState(true);
   const [qIdx, setQIdx] = useState(0);
   const [state, setState] = useState<State>("idle");
   const [transcript, setTranscript] = useState<{ speaker: "ai" | "you"; text: string }[]>([]);
   const [seconds, setSeconds] = useState(0);
   const [scores, setScores] = useState({ pace: 78, confidence: 82, clarity: 74, overall: 78 });
   const transcriptRef = useRef<HTMLDivElement>(null);
+  const [recognizing, setRecognizing] = useState(false);
+  const recognitionRef = useRef<any>(null);
 
-  const q = voiceQuestions[qIdx];
+  const q = questions[qIdx] || { q: "Loading question...", timeLimitSec: 120, hint: "" };
+
+  const aiGreetings = [
+    `Welcome! I'm Sage. I noticed your background in ${profile?.resumeAnalysis?.extractedData?.skills?.languages?.[0] || "software engineering"}. Let's begin.`,
+    `Great response. Based on your experience with ${profile?.resumeAnalysis?.extractedData?.projects?.[0]?.name || "your recent projects"}, let's move on.`,
+    `Excellent. We previously identified ${profile?.skillGap?.gapAnalysis?.weak?.[0] || "some technical concepts"} as an area of growth. Let's explore that.`,
+    `You're doing well. One more question focusing on your career vision.`
+  ];
+
+  // Fetch Questions
+  useEffect(() => {
+    if (!activeResume) return;
+    fetch(`/api/interview/${activeResume._id}/start`, { method: "POST" })
+      .then(res => res.json())
+      .then(data => {
+        if (data.success && data.data.questions) setQuestions(data.data.questions);
+        setLoading(false);
+      })
+      .catch(() => setLoading(false));
+  }, [activeResume]);
+
+  // Initialize SpeechRecognition
+  useEffect(() => {
+    const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
+    if (SpeechRecognition) {
+      const recognition = new SpeechRecognition();
+      recognition.continuous = false;
+      recognition.interimResults = false;
+      recognition.lang = "en-US";
+
+      recognition.onstart = () => {
+        setRecognizing(true);
+      };
+
+      recognition.onresult = (event: any) => {
+        const text = event.results[0][0].transcript;
+        setState("processing");
+        setTimeout(() => {
+          setTranscript(prev => [...prev, { speaker: "you", text }]);
+          setScores(s => ({
+            pace: Math.min(s.pace + Math.floor(Math.random() * 5), 99),
+            confidence: Math.min(s.confidence + Math.floor(Math.random() * 4), 99),
+            clarity: Math.min(s.clarity + Math.floor(Math.random() * 6), 99),
+            overall: Math.min(s.overall + Math.floor(Math.random() * 4), 99),
+          }));
+          setState("idle");
+        }, 1000);
+      };
+
+      recognition.onerror = (event: any) => {
+        console.error("Speech recognition error", event.error);
+        setRecognizing(false);
+        setState("idle");
+      };
+
+      recognition.onend = () => {
+        setRecognizing(false);
+      };
+
+      recognitionRef.current = recognition;
+    }
+  }, []);
 
   // Auto-start AI speaking on mount and question change
   useEffect(() => {
+    if (loading || questions.length === 0) return;
+    
     setState("ai-speaking");
     const aiText = qIdx === 0 ? aiGreetings[0] + " " + q.q : aiGreetings[Math.min(qIdx, aiGreetings.length - 1)] + " " + q.q;
     const timer = setTimeout(() => {
@@ -60,7 +124,7 @@ function VoiceInterview() {
       setState("listening");
     }, 2500);
     return () => clearTimeout(timer);
-  }, [qIdx]);
+  }, [qIdx, loading, questions]);
 
   // Timer
   useEffect(() => {
@@ -76,34 +140,27 @@ function VoiceInterview() {
   const mm = String(Math.floor(seconds / 60)).padStart(2, "0");
   const ss = String(seconds % 60).padStart(2, "0");
 
-  const simulateSpeech = () => {
-    if (state !== "listening") return;
-    setState("processing");
+  const toggleSpeech = () => {
+    if (state !== "listening" && state !== "idle") return;
+    
+    if (!recognitionRef.current) {
+      alert("Speech Recognition API is not supported in this browser. Please use Chrome or Edge.");
+      return;
+    }
 
-    // Simulate Web Speech API transcription
-    const userResponses = [
-      "I have over 6 years of experience in frontend engineering, primarily building scalable React applications. I'm excited about this role because of the technical challenges and the opportunity to work on products that impact millions of users.",
-      "At my previous company, we had a critical performance issue where our dashboard was taking over 8 seconds to load. I profiled the app, identified unnecessary re-renders, implemented virtualization, and reduced load time to under 1.5 seconds.",
-      "When I disagree with a technical decision, I first make sure I fully understand the reasoning. Then I present my concerns with data. We had a case where I disagreed on using a monolith over microservices, and after a structured discussion, we reached a hybrid approach that worked well.",
-      "In five years, I see myself in a senior architect role, contributing to platform strategy. This role aligns perfectly because it gives me exposure to large-scale engineering challenges early on.",
-    ];
-
-    const response = userResponses[qIdx] ?? "I think the key here is to approach this systematically, starting with understanding the requirements...";
-
-    setTimeout(() => {
-      setTranscript(prev => [...prev, { speaker: "you", text: response }]);
-      setScores(s => ({
-        pace: Math.min(s.pace + Math.floor(Math.random() * 5), 99),
-        confidence: Math.min(s.confidence + Math.floor(Math.random() * 4), 99),
-        clarity: Math.min(s.clarity + Math.floor(Math.random() * 6), 99),
-        overall: Math.min(s.overall + Math.floor(Math.random() * 4), 99),
-      }));
-      setState("idle");
-    }, 3000);
+    if (recognizing) {
+      recognitionRef.current.stop();
+    } else {
+      try {
+        recognitionRef.current.start();
+      } catch (err) {
+        console.error("Error starting speech recognition:", err);
+      }
+    }
   };
 
   const nextQuestion = () => {
-    if (qIdx >= voiceQuestions.length - 1) {
+    if (qIdx >= questions.length - 1) {
       nav({ to: "/results" });
     } else {
       setQIdx(i => i + 1);
@@ -137,11 +194,17 @@ function VoiceInterview() {
               <Clock className="w-4 h-4" />
               <span className="font-mono">{mm}:{ss}</span>
             </div>
-            <div className="text-xs text-muted-foreground">Q{qIdx + 1} / {voiceQuestions.length}</div>
+            <div className="text-xs text-muted-foreground">Q{qIdx + 1} / {questions.length || 1}</div>
           </div>
         </div>
       </header>
 
+      {loading ? (
+        <div className="flex-1 flex flex-col items-center justify-center space-y-4">
+          <div className="w-12 h-12 rounded-full border-4 border-primary border-t-transparent animate-spin" />
+          <div className="font-semibold text-lg">Generating Personalized Voice Interview...</div>
+        </div>
+      ) : (
       <div className="flex-1 grid grid-cols-12 gap-0 max-h-[calc(100vh-56px)]">
         {/* Left — AI + Controls */}
         <div className="col-span-12 lg:col-span-4 border-r border-border flex flex-col p-6 gap-6">
@@ -185,19 +248,22 @@ function VoiceInterview() {
             </div>
           </div>
 
-          {/* Voice Control Buttons */}
           <div className="space-y-2">
             <Button
-              onClick={simulateSpeech}
-              disabled={state !== "listening"}
+              onClick={toggleSpeech}
+              disabled={state !== "listening" && !recognizing}
               className={cn(
                 "w-full h-14 text-base font-semibold transition-all",
-                state === "listening"
-                  ? "bg-emerald-500 hover:bg-emerald-600 border-0 shadow-lg scale-100"
-                  : "bg-muted text-muted-foreground border border-border"
+                recognizing
+                  ? "bg-red-500 hover:bg-red-600 border-0 shadow-lg scale-100 text-white"
+                  : state === "listening"
+                    ? "bg-emerald-500 hover:bg-emerald-600 border-0 shadow-lg scale-100 text-white"
+                    : "bg-muted text-muted-foreground border border-border"
               )}
             >
-              {state === "listening" ? (
+              {recognizing ? (
+                <><MicOff className="w-5 h-5 mr-2" />Stop Recording</>
+              ) : state === "listening" ? (
                 <><Mic className="w-5 h-5 mr-2" />Speak Now</>
               ) : state === "processing" ? (
                 <><Activity className="w-5 h-5 mr-2 animate-pulse" />Processing…</>
@@ -264,8 +330,8 @@ function VoiceInterview() {
             )}
           </div>
           <div className="px-6 py-3 border-t border-border">
-            <Progress value={((qIdx) / voiceQuestions.length) * 100} className="h-1.5" />
-            <div className="text-xs text-muted-foreground mt-1.5">Question {qIdx + 1} of {voiceQuestions.length}</div>
+            <Progress value={((qIdx) / (questions.length || 1)) * 100} className="h-1.5" />
+            <div className="text-xs text-muted-foreground mt-1.5">Question {qIdx + 1} of {questions.length || 1}</div>
           </div>
         </div>
 
@@ -313,13 +379,14 @@ function VoiceInterview() {
           </div>
 
           <div className="rounded-2xl bg-primary/5 border border-primary/20 p-4">
-            <div className="text-xs font-medium text-primary mb-2">💡 Interview Tip</div>
+            <div className="text-xs font-medium text-primary mb-2">💡 Context-Aware Tip</div>
             <div className="text-xs text-muted-foreground">
-              Use the STAR method: <strong>S</strong>ituation, <strong>T</strong>ask, <strong>A</strong>ction, <strong>R</strong>esult. Keep answers under 2 minutes each.
+              We know you are aiming for a <strong>{profile?.roadmap?.targetRole || "Software Engineer"}</strong> role. Answer this question specifically highlighting related experience.
             </div>
           </div>
         </div>
       </div>
+      )}
     </div>
   );
 }

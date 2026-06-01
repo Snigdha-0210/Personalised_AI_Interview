@@ -5,7 +5,7 @@ import { MongoMemoryServer } from "mongodb-memory-server";
 import dotenv from "dotenv";
 import multer from "multer";
 const pdfParse = require("pdf-parse");
-import { User, Resume, JobDescription, Session, Answer } from "./models";
+import { User, Resume, JobDescription, Session, Answer, CandidateProfile } from "./models";
 import * as ai from "./IntelligenceService";
 
 dotenv.config();
@@ -168,6 +168,16 @@ app.post("/api/resumes/upload", (req, res, next) => {
     await resume.save();
     console.log("✅ [5/5] Resume saved successfully to database!");
 
+    // UNIFIED SYSTEM: Update or Create CandidateProfile
+    let profile = await CandidateProfile.findOne({ userId: user._id });
+    if (!profile) {
+      profile = new CandidateProfile({ userId: user._id });
+    }
+    profile.resumeAnalysis = aiResult;
+    // Calculate initial readiness score based on ATS readiness
+    profile.readinessScore = aiResult.aiAnalysis?.hiringReadinessScore || 50;
+    await profile.save();
+
     res.json({ success: true, resume });
   } catch (error: any) {
     console.error("❌ Pipeline Error:", error);
@@ -243,6 +253,14 @@ app.post("/api/resumes/:id/match", async (req, res) => {
     const match = await ai.matchJobDescription(resume.cleanedText, req.body.jdText || "");
     resume.jdMatchSnapshot = match;
     await resume.save();
+
+    // Update Profile
+    let profile = await CandidateProfile.findOne({ userId: resume.userId });
+    if (profile) {
+      profile.jdAnalysis = match;
+      await profile.save();
+    }
+
     res.json({ success: true, data: match, resume });
   } catch (error: any) {
     console.error("JD Match AI failed:", error);
@@ -261,6 +279,15 @@ app.post("/api/resumes/:id/roadmap", async (req, res) => {
       gapSeverity: roadmap.gapSeverity
     };
     await resume.save();
+
+    // Update Profile
+    let profile = await CandidateProfile.findOne({ userId: resume.userId });
+    if (profile) {
+      profile.roadmap = roadmap;
+      profile.skillGap = { gapAnalysis: roadmap.gapAnalysis, gapSeverity: roadmap.gapSeverity };
+      await profile.save();
+    }
+
     res.json({ success: true, data: roadmap, resume });
   } catch (error: any) {
     console.error("Roadmap AI failed:", error);
@@ -272,7 +299,16 @@ app.post("/api/resumes/:id/interview-prep", async (req, res) => {
   try {
     const resume = await Resume.findById(req.params.id);
     if (!resume) return res.status(404).json({ success: false, error: "Resume not found" });
-    const prep = await ai.generateInterviewQuestions(resume.cleanedText, req.body.jdText || "General Software Engineer");
+    
+    let profile = await CandidateProfile.findOne({ userId: resume.userId });
+    const profileContext = `
+      Target Role: ${req.body.jdText || "General Software Engineer"}
+      Resume Overview: ${JSON.stringify(profile?.resumeAnalysis?.extractedData || {})}
+      Identified Weaknesses (Skill Gap): ${JSON.stringify(profile?.skillGap || {})}
+      Previously Asked Questions: ${JSON.stringify(profile?.askedQuestions || [])}
+    `;
+
+    const prep = await ai.generateInterviewQuestions(profileContext);
     res.json({ success: true, data: prep });
   } catch (error: any) {
     console.error("Interview Prep AI failed:", error);
@@ -280,6 +316,108 @@ app.post("/api/resumes/:id/interview-prep", async (req, res) => {
   }
 });
 
+app.post("/api/interview/:id/start", async (req, res) => {
+  try {
+    const resume = await Resume.findById(req.params.id);
+    if (!resume) return res.status(404).json({ success: false, error: "Resume not found" });
+    const jdText = req.body.jdText || "Software Engineer";
+
+    let profile = await CandidateProfile.findOne({ userId: resume.userId });
+    const profileContext = `
+      Target Role: ${jdText}
+      Resume Overview: ${JSON.stringify(profile?.resumeAnalysis?.extractedData || {})}
+      Identified Weaknesses (Skill Gap): ${JSON.stringify(profile?.skillGap || {})}
+      Previously Asked Questions: ${JSON.stringify(profile?.askedQuestions || [])}
+    `;
+
+    const questions = await ai.generateInterviewQuestions(profileContext);
+    
+    // Save generated questions to avoid repetition
+    if (profile && questions?.questions) {
+      questions.questions.forEach((q: any) => profile.askedQuestions.push(q.q));
+      await profile.save();
+    }
+
+    res.json({ success: true, data: questions });
+  } catch (error: any) {
+    console.error("Start Interview API failed:", error);
+    res.status(500).json({ success: false, error: "Start Interview API failed" });
+  }
+});
+
+app.post("/api/interview/:id/grade", async (req, res) => {
+  try {
+    const resume = await Resume.findById(req.params.id);
+    if (!resume) return res.status(404).json({ success: false, error: "Resume not found" });
+    const { transcript, role } = req.body;
+    const gradeResult = await ai.gradeInterview(transcript, role || "Software Engineer");
+    
+    const session = new Session({
+      userId: resume.userId,
+      resumeId: resume._id,
+      track: role || "Software Engineer",
+      type: "Technical",
+      status: "completed",
+      overallScore: gradeResult.score || 0,
+      hiringConfidence: gradeResult.score || 0,
+      pressureIndex: 50,
+      transcript: { raw: transcript, grade: gradeResult }
+    });
+    await session.save();
+    
+    // Post Interview Intelligence Engine
+    let profile = await CandidateProfile.findOne({ userId: resume.userId });
+    if (profile) {
+      profile.interviewHistory.push(session._id);
+      
+      // Calculate unified metrics
+      const pastScores = profile.readinessScore;
+      const newScore = gradeResult.score || 0;
+      profile.readinessScore = Math.round((pastScores + newScore) / 2); // Simple moving average
+      profile.hiringProbability = Math.round((profile.readinessScore * 0.7) + (gradeResult.score * 0.3));
+      
+      await profile.save();
+    }
+
+    res.json({ success: true, data: gradeResult });
+  } catch (error: any) {
+    console.error("Grade Interview API failed:", error);
+    res.status(500).json({ success: false, error: "Grade Interview API failed" });
+  }
+});
+
+app.get("/api/recruiter/sessions", async (req, res) => {
+  try {
+    const sessions = await Session.find().sort({ createdAt: -1 });
+    res.json({ success: true, data: sessions });
+  } catch (error: any) {
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
+app.post("/api/interview/:id/panel-grade", async (req, res) => {
+  try {
+    const resume = await Resume.findById(req.params.id);
+    if (!resume) return res.status(404).json({ success: false, error: "Resume not found" });
+
+    const transcript = req.body.transcript || "";
+    const result = await ai.gradePanelInterview(transcript);
+    res.json({ success: true, data: result });
+  } catch (error: any) {
+    console.error("Panel Grade API failed:", error);
+    res.status(500).json({ success: false, error: "Panel Grade API failed" });
+  }
+});
+
+app.get("/api/profile/:userId", async (req, res) => {
+  try {
+    const profile = await CandidateProfile.findOne({ userId: req.params.userId }).populate("interviewHistory");
+    if (!profile) return res.status(404).json({ success: false, error: "Profile not found" });
+    res.json({ success: true, data: profile });
+  } catch (error: any) {
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
 
 // Start Server
 app.listen(PORT, () => {

@@ -2,19 +2,51 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { PageHeader } from "@/components/AppLayout";
 import { Button } from "@/components/ui/button";
 import { TrendingUp, Award, CheckCircle2, Activity, Upload, FileText, Mic, ArrowUpRight } from "lucide-react";
-import { performanceTrend, skillProgress, recentActivity } from "@/lib/mock-data";
 import { Area, AreaChart, Bar, BarChart, CartesianGrid, Legend, Line, LineChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
+import { useResumeContext } from "@/lib/ResumeContext";
 
 export const Route = createFileRoute("/_authenticated/dashboard")({ component: Dashboard });
 
-const stats = [
-  { label: "Readiness Score", value: "87", delta: "+12", icon: Award, accent: "bg-primary/10 text-primary" },
-  { label: "Hiring Confidence", value: "High", delta: "Strong Hire", icon: CheckCircle2, accent: "bg-success/10 text-success" },
-  { label: "Interviews Completed", value: "24", delta: "+4 this wk", icon: Activity, accent: "bg-warning/10 text-warning" },
-  { label: "Improvement Trend", value: "+18%", delta: "8-wk avg", icon: TrendingUp, accent: "bg-chart-4/10 text-chart-4" },
-];
-
 function Dashboard() {
+  const { profile } = useResumeContext();
+
+  const readinessScore = profile?.readinessScore || 0;
+  const hiringConfidence = profile?.hiringProbability > 70 ? "High" : profile?.hiringProbability > 40 ? "Medium" : "Low";
+  const interviewsCompleted = profile?.interviewHistory?.length || 0;
+
+  const stats = [
+    { label: "Readiness Score", value: readinessScore.toString(), delta: "+12", icon: Award, accent: "bg-primary/10 text-primary" },
+    { label: "Hiring Confidence", value: hiringConfidence, delta: "Strong Hire", icon: CheckCircle2, accent: "bg-success/10 text-success" },
+    { label: "Interviews Completed", value: interviewsCompleted.toString(), delta: "Lifetime", icon: Activity, accent: "bg-warning/10 text-warning" },
+    { label: "Improvement Trend", value: "+18%", delta: "8-wk avg", icon: TrendingUp, accent: "bg-chart-4/10 text-chart-4" },
+  ];
+
+  // Placeholder for missing real data in this scope
+  const performanceTrend = [
+    { week: "W1", score: 40, target: 50 },
+    { week: "W2", score: 55, target: 55 },
+    { week: "W3", score: Math.max(60, readinessScore - 10), target: 60 },
+    { week: "W4", score: readinessScore || 70, target: 65 },
+  ];
+  
+  const skillProgress = [
+    { skill: "React", prev: 50, current: 80 },
+    { skill: "Node", prev: 40, current: 75 },
+    { skill: "System Design", prev: 30, current: 60 },
+  ];
+
+  const recentActivity = (profile?.interviewHistory || []).map((s: any, i: number) => ({
+    id: s._id || i,
+    type: "Technical Interview",
+    date: new Date(s.createdAt || Date.now()).toLocaleDateString(),
+    title: s.track || "Software Engineer",
+    score: s.overallScore || 0,
+  }));
+
+  if (recentActivity.length === 0) {
+    recentActivity.push({ id: 1, type: "System", date: "Today", title: "Profile Initialized", score: readinessScore });
+  }
+
   return (
     <>
       <PageHeader

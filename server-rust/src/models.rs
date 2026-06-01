@@ -65,3 +65,21 @@ pub struct JobDescription {
     #[serde(rename = "extractedKeywords")]
     pub extracted_keywords: Option<Vec<String>>,
 }
+
+#[derive(Debug, Serialize, Deserialize, Clone)]
+pub struct InterviewSession {
+    #[serde(rename = "_id", skip_serializing_if = "Option::is_none")]
+    pub id: Option<ObjectId>,
+    #[serde(rename = "userId", skip_serializing_if = "Option::is_none")]
+    pub user_id: Option<ObjectId>,
+    #[serde(rename = "resumeId", skip_serializing_if = "Option::is_none")]
+    pub resume_id: Option<ObjectId>,
+    pub date: Option<String>,
+    pub role: Option<String>,
+    #[serde(rename = "type")]
+    pub interview_type: Option<String>,
+    pub score: Option<i32>,
+    pub recommendation: Option<String>,
+    pub duration: Option<String>,
+    pub transcript: Option<Value>,
+}

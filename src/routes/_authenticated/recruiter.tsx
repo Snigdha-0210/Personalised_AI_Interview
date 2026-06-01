@@ -1,8 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { PageHeader } from "@/components/AppLayout";
 import { Button } from "@/components/ui/button";
-import { recruiterSession } from "@/lib/mock-data";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import {
   Shield, Download, TrendingUp, TrendingDown, Minus, CheckCircle2,
   AlertTriangle, Users, BarChart3, FileText, Activity, Clock
@@ -39,8 +38,49 @@ const scoreProgression = recruiterSession.questionProgression.map(q => ({
 
 function RecruiterPage() {
   const [activeTab, setActiveTab] = useState<"overview" | "transcript" | "analytics">("overview");
-  const rec = recruiterSession;
-  const rcfg = recommendationConfig[rec.recommendation];
+  const [sessions, setSessions] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    fetch("/api/recruiter/sessions")
+      .then(res => res.json())
+      .then(data => {
+        if (data.success) setSessions(data.data);
+        setLoading(false);
+      })
+      .catch(err => {
+        console.error(err);
+        setLoading(false);
+      });
+  }, []);
+
+  if (loading) return <div className="p-8 text-center text-muted-foreground">Loading sessions...</div>;
+  if (!sessions.length) return <div className="p-8 text-center text-muted-foreground">No interview sessions recorded yet.</div>;
+
+  const session = sessions[0]; // Display the most recent session
+  const grade = session.transcript?.grade || {};
+
+  const rec = {
+    candidate: { 
+      name: "Candidate", 
+      role: session.track || "Software Engineer", 
+      duration: session.transcript?.grade?.duration || "15m", 
+      date: new Date(session.createdAt || Date.now()).toLocaleDateString() 
+    },
+    overallScore: session.overallScore || grade.score || 0,
+    recommendation: grade.recommendation || "Borderline",
+    hiringConfidence: session.hiringConfidence || grade.score || 0,
+    questionProgression: [
+      { q: 1, type: "Technical", timeSpent: "5m", difficulty: "Medium", score: grade.score || 85, difficultyChange: "Constant" }
+    ],
+    strengths: grade.feedback?.filter((f: any) => f.score >= 80).map((f: any) => `${f.aspect}: ${f.comments}`) || ["Solid technical fundamentals"],
+    weaknesses: grade.feedback?.filter((f: any) => f.score < 80).map((f: any) => `${f.aspect}: ${f.comments}`) || ["Could provide deeper answers"],
+    riskIndicators: [{ label: "Communication Risk", severity: "Low", detail: "Acceptable for role" }],
+    difficultyHistory: [{ step: "Q1", level: "Medium" }],
+    transcript: [{ time: "00:00", speaker: "Candidate", text: session.transcript?.raw || "No transcript recorded" }]
+  };
+
+  const rcfg = recommendationConfig[rec.recommendation] || recommendationConfig["Borderline"];
 
   const tabs = [
     { id: "overview" as const, label: "Overview", icon: Users },

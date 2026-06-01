@@ -117,6 +117,7 @@ export interface ISession extends Document {
   overallScore: number;
   hiringConfidence: number;
   pressureIndex: number;
+  transcript?: any;
 }
 const SessionSchema = new Schema<ISession>({
   userId: { type: Schema.Types.ObjectId, ref: "User", required: true },
@@ -128,6 +129,7 @@ const SessionSchema = new Schema<ISession>({
   overallScore: { type: Number, default: 0 },
   hiringConfidence: { type: Number, default: 0 },
   pressureIndex: { type: Number, default: 0 },
+  transcript: { type: Schema.Types.Mixed },
 }, { timestamps: true });
 export const Session = mongoose.model<ISession>("Session", SessionSchema);
 
@@ -162,3 +164,29 @@ const AnswerSchema = new Schema<IAnswer>({
   },
 }, { timestamps: true });
 export const Answer = mongoose.model<IAnswer>("Answer", AnswerSchema);
+
+// --- Candidate Profile ---
+export interface ICandidateProfile extends Document {
+  userId: mongoose.Types.ObjectId;
+  readinessScore: number;
+  hiringProbability: number;
+  resumeAnalysis: any;
+  jdAnalysis: any;
+  skillGap: any;
+  roadmap: any;
+  interviewHistory: mongoose.Types.ObjectId[];
+  askedQuestions: string[];
+}
+
+const CandidateProfileSchema = new Schema<ICandidateProfile>({
+  userId: { type: Schema.Types.ObjectId, ref: "User", required: true, unique: true },
+  readinessScore: { type: Number, default: 0 },
+  hiringProbability: { type: Number, default: 0 },
+  resumeAnalysis: { type: Schema.Types.Mixed, default: {} },
+  jdAnalysis: { type: Schema.Types.Mixed, default: {} },
+  skillGap: { type: Schema.Types.Mixed, default: {} },
+  roadmap: { type: Schema.Types.Mixed, default: {} },
+  interviewHistory: [{ type: Schema.Types.ObjectId, ref: "Session" }],
+  askedQuestions: [{ type: String }],
+}, { timestamps: true });
+export const CandidateProfile = mongoose.model<ICandidateProfile>("CandidateProfile", CandidateProfileSchema);

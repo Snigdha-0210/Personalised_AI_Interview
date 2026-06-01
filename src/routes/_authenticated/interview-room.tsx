@@ -3,7 +3,7 @@ import { PageHeader } from "@/components/AppLayout";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Progress } from "@/components/ui/progress";
-import { interviewQuestions } from "@/lib/mock-data";
+import { useResumeContext } from "@/lib/ResumeContext";
 import type { Question } from "@/lib/mock-data";
 import {
   Mic, Send, Sparkles, Clock, TrendingUp, TrendingDown, Minus,
@@ -242,7 +242,12 @@ function TextCard({ q, onAnswer }: { q: Question; onAnswer: (correct: boolean) =
 
 function Room() {
   const nav = useNavigate();
+  const { activeResume } = useResumeContext();
+  const [questions, setQuestions] = useState<Question[]>([]);
+  const [loading, setLoading] = useState(true);
+  
   const [qIdx, setQIdx] = useState(0);
+  const [askedQs, setAskedQs] = useState<number[]>([0]);
   const [seconds, setSeconds] = useState(0);
   const [thinking, setThinking] = useState(false);
   const [score, setScore] = useState(78);
@@ -252,14 +257,45 @@ function Room() {
   const currentDiff = diffHistory[diffHistory.length - 1].diff;
 
   useEffect(() => {
+    if (!activeResume) return;
+    fetch(`/api/interview/${activeResume._id}/start`, { method: "POST" })
+      .then(res => res.json())
+      .then(data => {
+        if (data.success && data.data.questions) {
+          setQuestions(data.data.questions);
+        }
+        setLoading(false);
+      })
+      .catch(err => {
+        console.error(err);
+        setLoading(false);
+      });
+  }, [activeResume]);
+
+  useEffect(() => {
+    if (loading) return;
     const i = setInterval(() => setSeconds(s => s + 1), 1000);
     return () => clearInterval(i);
-  }, []);
+  }, [loading]);
+
+  if (loading) {
+    return (
+      <div className="flex flex-col items-center justify-center min-h-[80vh] space-y-4">
+        <div className="w-16 h-16 rounded-full border-4 border-primary border-t-transparent animate-spin" />
+        <h2 className="text-xl font-bold">Generating Tailored Interview...</h2>
+        <p className="text-muted-foreground">Analyzing your skill gaps to build dynamic questions.</p>
+      </div>
+    );
+  }
+
+  if (!questions || questions.length === 0) {
+    return <div className="p-10 text-center">No questions found or you haven't uploaded a resume yet.</div>;
+  }
 
   const mm = String(Math.floor(seconds / 60)).padStart(2, "0");
   const ss = String(seconds % 60).padStart(2, "0");
 
-  const q = interviewQuestions[qIdx % interviewQuestions.length];
+  const q = questions[qIdx % questions.length];
 
   const handleAnswer = (correct: boolean) => {
     setThinking(true);
@@ -272,10 +308,15 @@ function Room() {
     setTimeout(() => {
       setThinking(false);
       setDiffHistory(h => [...h, { diff: newDiff, reason }]);
-      if (qIdx >= interviewQuestions.length - 1) {
+      
+      let nextIndex = questions.findIndex((q, i) => !askedQs.includes(i) && q.difficulty === newDiff);
+      if (nextIndex === -1) nextIndex = questions.findIndex((q, i) => !askedQs.includes(i));
+      
+      if (nextIndex === -1) {
         nav({ to: "/results" });
       } else {
-        setQIdx(i => i + 1);
+        setAskedQs(prev => [...prev, nextIndex]);
+        setQIdx(nextIndex);
       }
     }, 1600);
   };
@@ -302,7 +343,7 @@ function Room() {
             <span className={cn("px-3 py-1.5 rounded-full text-xs font-semibold border", diffColor[currentDiff])}>
               {currentDiff}
             </span>
-            <span className="text-xs text-muted-foreground">Q{qIdx + 1} of {interviewQuestions.length}</span>
+            <span className="text-xs text-muted-foreground">Q{qIdx + 1} of {questions.length}</span>
           </div>
         }
       />
@@ -329,9 +370,9 @@ function Room() {
           {/* Progress */}
           <div className="rounded-2xl bg-card border border-border p-5 shadow-card">
             <h3 className="text-sm font-semibold mb-3">Session Progress</h3>
-            <Progress value={((qIdx) / interviewQuestions.length) * 100} className="mb-3" />
+            <Progress value={((qIdx) / questions.length) * 100} className="mb-3" />
             <ul className="space-y-1.5">
-              {interviewQuestions.map((iq, i) => (
+              {questions.map((iq, i) => (
                 <li key={iq.id} className={cn(
                   "flex items-center gap-2 text-xs",
                   i === qIdx ? "text-primary font-medium" :
@@ -339,7 +380,7 @@ function Room() {
                       "text-muted-foreground"
                 )}>
                   <span className="w-1.5 h-1.5 rounded-full bg-current shrink-0" />
-                  Q{i + 1} · {questionTypeLabel[iq.type]}
+                  Q{i + 1} · {iq.skill}
                 </li>
               ))}
             </ul>
@@ -375,7 +416,7 @@ function Room() {
           <div className="rounded-2xl bg-card border border-border p-6 shadow-card">
             <div className="flex items-center gap-2 mb-3">
               <span className="text-xs font-medium text-muted-foreground uppercase tracking-wider">
-                {questionTypeLabel[q.type]}
+                {questionTypeLabel[q.type || ""] || q.type || "Question"}
               </span>
               <span className="w-1 h-1 rounded-full bg-muted-foreground" />
               <span className="text-xs text-muted-foreground">{q.skill}</span>
@@ -404,7 +445,7 @@ function Room() {
                 {q.type === "mcq" && <MCQCard key={qIdx} q={q} onAnswer={handleAnswer} />}
                 {q.type === "fill" && <FillCard key={qIdx} q={q} onAnswer={handleAnswer} />}
                 {q.type === "coding" && <CodingCard key={qIdx} q={q} onAnswer={handleAnswer} />}
-                {(q.type === "short" || q.type === "subjective" || q.type === "scenario") && (
+                {(!["mcq", "fill", "coding"].includes(q.type || "")) && (
                   <TextCard key={qIdx} q={q} onAnswer={handleAnswer} />
                 )}
               </>

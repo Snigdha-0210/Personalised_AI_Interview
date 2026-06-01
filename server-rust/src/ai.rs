@@ -162,7 +162,7 @@ Return ONLY RAW VALID JSON:
 
 pub async fn generate_interview_questions(resume_text: &str, jd_text: &str) -> Result<Value, String> {
     let prompt = format!(
-        r#"You are a strict technical interviewer. Generate tailored interview questions.
+        r#"You are a strict technical interviewer. Generate tailored interview questions based on the candidate's skill gaps and the job description.
 Resume:
 """
 {}
@@ -174,10 +174,32 @@ Job Description:
 Return ONLY RAW VALID JSON:
 {{
   "questions": [
-    {{ "type": "Technical", "difficulty": "Medium", "question": "..." }}
+    {{ "id": 1, "type": "Technical", "difficulty": "Medium", "q": "...", "skill": "System Design" }},
+    {{ "id": 2, "type": "Behavioral", "difficulty": "Hard", "q": "...", "skill": "Leadership" }}
   ]
 }}
 "#, resume_text, jd_text);
     call_groq(&prompt).await
 }
 
+pub async fn grade_interview(transcript: &str, role: &str) -> Result<Value, String> {
+    let prompt = format!(
+        r#"You are a senior hiring manager. Grade this candidate's interview transcript for the role of {}.
+Transcript:
+"""
+{}
+"""
+Return ONLY RAW VALID JSON:
+{{
+  "score": 85,
+  "recommendation": "<Hire | Strong Hire | Borderline | No Hire>",
+  "duration": "10m",
+  "feedback": [
+    {{ "aspect": "Technical Depth", "score": 85, "comments": "..." }},
+    {{ "aspect": "Communication", "score": 90, "comments": "..." }}
+  ],
+  "summary": "..."
+}}
+"#, role, transcript);
+    call_groq(&prompt).await
+}
