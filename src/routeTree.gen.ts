@@ -15,6 +15,7 @@ import { Route as AuthenticatedRouteImport } from './routes/_authenticated'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as AuthenticatedSkillGapRouteImport } from './routes/_authenticated/skill-gap'
 import { Route as AuthenticatedResumeRouteImport } from './routes/_authenticated/resume'
+import { Route as AuthenticatedResultsRouteImport } from './routes/_authenticated/results'
 import { Route as AuthenticatedPanelRouteImport } from './routes/_authenticated/panel'
 import { Route as AuthenticatedJdMatchRouteImport } from './routes/_authenticated/jd-match'
 import { Route as AuthenticatedInterviewSetupRouteImport } from './routes/_authenticated/interview-setup'
@@ -48,6 +49,11 @@ const AuthenticatedSkillGapRoute = AuthenticatedSkillGapRouteImport.update({
 const AuthenticatedResumeRoute = AuthenticatedResumeRouteImport.update({
   id: '/resume',
   path: '/resume',
+  getParentRoute: () => AuthenticatedRoute,
+} as any)
+const AuthenticatedResultsRoute = AuthenticatedResultsRouteImport.update({
+  id: '/results',
+  path: '/results',
   getParentRoute: () => AuthenticatedRoute,
 } as any)
 const AuthenticatedPanelRoute = AuthenticatedPanelRouteImport.update({
@@ -87,6 +93,7 @@ export interface FileRoutesByFullPath {
   '/interview-setup': typeof AuthenticatedInterviewSetupRoute
   '/jd-match': typeof AuthenticatedJdMatchRoute
   '/panel': typeof AuthenticatedPanelRoute
+  '/results': typeof AuthenticatedResultsRoute
   '/resume': typeof AuthenticatedResumeRoute
   '/skill-gap': typeof AuthenticatedSkillGapRoute
 }
@@ -99,6 +106,7 @@ export interface FileRoutesByTo {
   '/interview-setup': typeof AuthenticatedInterviewSetupRoute
   '/jd-match': typeof AuthenticatedJdMatchRoute
   '/panel': typeof AuthenticatedPanelRoute
+  '/results': typeof AuthenticatedResultsRoute
   '/resume': typeof AuthenticatedResumeRoute
   '/skill-gap': typeof AuthenticatedSkillGapRoute
 }
@@ -113,6 +121,7 @@ export interface FileRoutesById {
   '/_authenticated/interview-setup': typeof AuthenticatedInterviewSetupRoute
   '/_authenticated/jd-match': typeof AuthenticatedJdMatchRoute
   '/_authenticated/panel': typeof AuthenticatedPanelRoute
+  '/_authenticated/results': typeof AuthenticatedResultsRoute
   '/_authenticated/resume': typeof AuthenticatedResumeRoute
   '/_authenticated/skill-gap': typeof AuthenticatedSkillGapRoute
 }
@@ -127,6 +136,7 @@ export interface FileRouteTypes {
     | '/interview-setup'
     | '/jd-match'
     | '/panel'
+    | '/results'
     | '/resume'
     | '/skill-gap'
   fileRoutesByTo: FileRoutesByTo
@@ -139,6 +149,7 @@ export interface FileRouteTypes {
     | '/interview-setup'
     | '/jd-match'
     | '/panel'
+    | '/results'
     | '/resume'
     | '/skill-gap'
   id:
@@ -152,6 +163,7 @@ export interface FileRouteTypes {
     | '/_authenticated/interview-setup'
     | '/_authenticated/jd-match'
     | '/_authenticated/panel'
+    | '/_authenticated/results'
     | '/_authenticated/resume'
     | '/_authenticated/skill-gap'
   fileRoutesById: FileRoutesById
@@ -207,6 +219,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedResumeRouteImport
       parentRoute: typeof AuthenticatedRoute
     }
+    '/_authenticated/results': {
+      id: '/_authenticated/results'
+      path: '/results'
+      fullPath: '/results'
+      preLoaderRoute: typeof AuthenticatedResultsRouteImport
+      parentRoute: typeof AuthenticatedRoute
+    }
     '/_authenticated/panel': {
       id: '/_authenticated/panel'
       path: '/panel'
@@ -251,6 +270,7 @@ interface AuthenticatedRouteChildren {
   AuthenticatedInterviewSetupRoute: typeof AuthenticatedInterviewSetupRoute
   AuthenticatedJdMatchRoute: typeof AuthenticatedJdMatchRoute
   AuthenticatedPanelRoute: typeof AuthenticatedPanelRoute
+  AuthenticatedResultsRoute: typeof AuthenticatedResultsRoute
   AuthenticatedResumeRoute: typeof AuthenticatedResumeRoute
   AuthenticatedSkillGapRoute: typeof AuthenticatedSkillGapRoute
 }
@@ -261,6 +281,7 @@ const AuthenticatedRouteChildren: AuthenticatedRouteChildren = {
   AuthenticatedInterviewSetupRoute: AuthenticatedInterviewSetupRoute,
   AuthenticatedJdMatchRoute: AuthenticatedJdMatchRoute,
   AuthenticatedPanelRoute: AuthenticatedPanelRoute,
+  AuthenticatedResultsRoute: AuthenticatedResultsRoute,
   AuthenticatedResumeRoute: AuthenticatedResumeRoute,
   AuthenticatedSkillGapRoute: AuthenticatedSkillGapRoute,
 }
