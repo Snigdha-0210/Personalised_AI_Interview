@@ -17,6 +17,7 @@ import { Route as AuthenticatedSkillGapRouteImport } from './routes/_authenticat
 import { Route as AuthenticatedResumeRouteImport } from './routes/_authenticated/resume'
 import { Route as AuthenticatedJdMatchRouteImport } from './routes/_authenticated/jd-match'
 import { Route as AuthenticatedInterviewSetupRouteImport } from './routes/_authenticated/interview-setup'
+import { Route as AuthenticatedInterviewRoomRouteImport } from './routes/_authenticated/interview-room'
 import { Route as AuthenticatedDashboardRouteImport } from './routes/_authenticated/dashboard'
 
 const SignupRoute = SignupRouteImport.update({
@@ -59,6 +60,12 @@ const AuthenticatedInterviewSetupRoute =
     path: '/interview-setup',
     getParentRoute: () => AuthenticatedRoute,
   } as any)
+const AuthenticatedInterviewRoomRoute =
+  AuthenticatedInterviewRoomRouteImport.update({
+    id: '/interview-room',
+    path: '/interview-room',
+    getParentRoute: () => AuthenticatedRoute,
+  } as any)
 const AuthenticatedDashboardRoute = AuthenticatedDashboardRouteImport.update({
   id: '/dashboard',
   path: '/dashboard',
@@ -70,6 +77,7 @@ export interface FileRoutesByFullPath {
   '/login': typeof LoginRoute
   '/signup': typeof SignupRoute
   '/dashboard': typeof AuthenticatedDashboardRoute
+  '/interview-room': typeof AuthenticatedInterviewRoomRoute
   '/interview-setup': typeof AuthenticatedInterviewSetupRoute
   '/jd-match': typeof AuthenticatedJdMatchRoute
   '/resume': typeof AuthenticatedResumeRoute
@@ -80,6 +88,7 @@ export interface FileRoutesByTo {
   '/login': typeof LoginRoute
   '/signup': typeof SignupRoute
   '/dashboard': typeof AuthenticatedDashboardRoute
+  '/interview-room': typeof AuthenticatedInterviewRoomRoute
   '/interview-setup': typeof AuthenticatedInterviewSetupRoute
   '/jd-match': typeof AuthenticatedJdMatchRoute
   '/resume': typeof AuthenticatedResumeRoute
@@ -92,6 +101,7 @@ export interface FileRoutesById {
   '/login': typeof LoginRoute
   '/signup': typeof SignupRoute
   '/_authenticated/dashboard': typeof AuthenticatedDashboardRoute
+  '/_authenticated/interview-room': typeof AuthenticatedInterviewRoomRoute
   '/_authenticated/interview-setup': typeof AuthenticatedInterviewSetupRoute
   '/_authenticated/jd-match': typeof AuthenticatedJdMatchRoute
   '/_authenticated/resume': typeof AuthenticatedResumeRoute
@@ -104,6 +114,7 @@ export interface FileRouteTypes {
     | '/login'
     | '/signup'
     | '/dashboard'
+    | '/interview-room'
     | '/interview-setup'
     | '/jd-match'
     | '/resume'
@@ -114,6 +125,7 @@ export interface FileRouteTypes {
     | '/login'
     | '/signup'
     | '/dashboard'
+    | '/interview-room'
     | '/interview-setup'
     | '/jd-match'
     | '/resume'
@@ -125,6 +137,7 @@ export interface FileRouteTypes {
     | '/login'
     | '/signup'
     | '/_authenticated/dashboard'
+    | '/_authenticated/interview-room'
     | '/_authenticated/interview-setup'
     | '/_authenticated/jd-match'
     | '/_authenticated/resume'
@@ -196,6 +209,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedInterviewSetupRouteImport
       parentRoute: typeof AuthenticatedRoute
     }
+    '/_authenticated/interview-room': {
+      id: '/_authenticated/interview-room'
+      path: '/interview-room'
+      fullPath: '/interview-room'
+      preLoaderRoute: typeof AuthenticatedInterviewRoomRouteImport
+      parentRoute: typeof AuthenticatedRoute
+    }
     '/_authenticated/dashboard': {
       id: '/_authenticated/dashboard'
       path: '/dashboard'
@@ -208,6 +228,7 @@ declare module '@tanstack/react-router' {
 
 interface AuthenticatedRouteChildren {
   AuthenticatedDashboardRoute: typeof AuthenticatedDashboardRoute
+  AuthenticatedInterviewRoomRoute: typeof AuthenticatedInterviewRoomRoute
   AuthenticatedInterviewSetupRoute: typeof AuthenticatedInterviewSetupRoute
   AuthenticatedJdMatchRoute: typeof AuthenticatedJdMatchRoute
   AuthenticatedResumeRoute: typeof AuthenticatedResumeRoute
@@ -216,6 +237,7 @@ interface AuthenticatedRouteChildren {
 
 const AuthenticatedRouteChildren: AuthenticatedRouteChildren = {
   AuthenticatedDashboardRoute: AuthenticatedDashboardRoute,
+  AuthenticatedInterviewRoomRoute: AuthenticatedInterviewRoomRoute,
   AuthenticatedInterviewSetupRoute: AuthenticatedInterviewSetupRoute,
   AuthenticatedJdMatchRoute: AuthenticatedJdMatchRoute,
   AuthenticatedResumeRoute: AuthenticatedResumeRoute,
