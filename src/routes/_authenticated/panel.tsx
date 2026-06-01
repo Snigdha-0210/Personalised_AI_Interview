@@ -6,7 +6,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { useState } from "react";
 import { useResumeContext } from "@/lib/ResumeContext";
 import { Send, Sparkles } from "lucide-react";
-import { panelGradeDefault } from "@/server/functions";
+import { panelGradeDefault } from "@/server/db-functions";
 
 export const Route = createFileRoute("/_authenticated/panel")({ component: Panel });
 

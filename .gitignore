@@ -13,12 +13,13 @@ dist-ssr
 .output
 .vinxi
 .tanstack/**
-.nitro
-*.local
+.# local env files
 .env
-server/.env
-server-rust/.env
-target/
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+.env.*rget/
 **/*.rs.bk
 # Wrangler / Cloudflare
 .wrangler/

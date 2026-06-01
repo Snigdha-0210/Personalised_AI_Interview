@@ -1,13 +1,24 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { PageHeader } from "@/components/AppLayout";
+import { useState } from "react";
+import { Progress } from "@/components/ui/progress";
+import { getDashboardAnalytics } from "@/server/db-functions";
 import { Button } from "@/components/ui/button";
 import { TrendingUp, Award, CheckCircle2, Activity, Upload, FileText, Mic, ArrowUpRight } from "lucide-react";
 import { Area, AreaChart, Bar, BarChart, CartesianGrid, Legend, Line, LineChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
 import { useResumeContext } from "@/lib/ResumeContext";
 
-export const Route = createFileRoute("/_authenticated/dashboard")({ component: Dashboard });
+export const Route = createFileRoute("/_authenticated/dashboard")({ 
+  component: Dashboard,
+  loader: async () => {
+    const res = await getDashboardAnalytics();
+    return res.data;
+  }
+});
 
 function Dashboard() {
+  const analyticsData = Route.useLoaderData();
+  const [activeTab, setActiveTab] = useState("overview");
   const { profile } = useResumeContext();
 
   const readinessScore = profile?.readinessScore || 0;

@@ -5,7 +5,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Progress } from "@/components/ui/progress";
 import { useResumeContext } from "@/lib/ResumeContext";
 import type { Question } from "@/lib/mock-data";
-import { startDefaultInterview } from "@/server/functions";
+import { startDefaultInterview } from "@/server/db-functions";
 import {
   Mic, Send, Sparkles, Clock, TrendingUp, TrendingDown, Minus,
   ChevronRight, CheckCircle2, XCircle, Code2, Lightbulb, Info
