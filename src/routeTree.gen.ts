@@ -20,6 +20,7 @@ import { Route as AuthenticatedPanelRouteImport } from './routes/_authenticated/
 import { Route as AuthenticatedJdMatchRouteImport } from './routes/_authenticated/jd-match'
 import { Route as AuthenticatedInterviewSetupRouteImport } from './routes/_authenticated/interview-setup'
 import { Route as AuthenticatedInterviewRoomRouteImport } from './routes/_authenticated/interview-room'
+import { Route as AuthenticatedHistoryRouteImport } from './routes/_authenticated/history'
 import { Route as AuthenticatedDashboardRouteImport } from './routes/_authenticated/dashboard'
 import { Route as AuthenticatedAuditRouteImport } from './routes/_authenticated/audit'
 import { Route as AuthenticatedAnalyticsRouteImport } from './routes/_authenticated/analytics'
@@ -81,6 +82,11 @@ const AuthenticatedInterviewRoomRoute =
     path: '/interview-room',
     getParentRoute: () => AuthenticatedRoute,
   } as any)
+const AuthenticatedHistoryRoute = AuthenticatedHistoryRouteImport.update({
+  id: '/history',
+  path: '/history',
+  getParentRoute: () => AuthenticatedRoute,
+} as any)
 const AuthenticatedDashboardRoute = AuthenticatedDashboardRouteImport.update({
   id: '/dashboard',
   path: '/dashboard',
@@ -110,6 +116,7 @@ export interface FileRoutesByFullPath {
   '/analytics': typeof AuthenticatedAnalyticsRoute
   '/audit': typeof AuthenticatedAuditRoute
   '/dashboard': typeof AuthenticatedDashboardRoute
+  '/history': typeof AuthenticatedHistoryRoute
   '/interview-room': typeof AuthenticatedInterviewRoomRoute
   '/interview-setup': typeof AuthenticatedInterviewSetupRoute
   '/jd-match': typeof AuthenticatedJdMatchRoute
@@ -126,6 +133,7 @@ export interface FileRoutesByTo {
   '/analytics': typeof AuthenticatedAnalyticsRoute
   '/audit': typeof AuthenticatedAuditRoute
   '/dashboard': typeof AuthenticatedDashboardRoute
+  '/history': typeof AuthenticatedHistoryRoute
   '/interview-room': typeof AuthenticatedInterviewRoomRoute
   '/interview-setup': typeof AuthenticatedInterviewSetupRoute
   '/jd-match': typeof AuthenticatedJdMatchRoute
@@ -144,6 +152,7 @@ export interface FileRoutesById {
   '/_authenticated/analytics': typeof AuthenticatedAnalyticsRoute
   '/_authenticated/audit': typeof AuthenticatedAuditRoute
   '/_authenticated/dashboard': typeof AuthenticatedDashboardRoute
+  '/_authenticated/history': typeof AuthenticatedHistoryRoute
   '/_authenticated/interview-room': typeof AuthenticatedInterviewRoomRoute
   '/_authenticated/interview-setup': typeof AuthenticatedInterviewSetupRoute
   '/_authenticated/jd-match': typeof AuthenticatedJdMatchRoute
@@ -162,6 +171,7 @@ export interface FileRouteTypes {
     | '/analytics'
     | '/audit'
     | '/dashboard'
+    | '/history'
     | '/interview-room'
     | '/interview-setup'
     | '/jd-match'
@@ -178,6 +188,7 @@ export interface FileRouteTypes {
     | '/analytics'
     | '/audit'
     | '/dashboard'
+    | '/history'
     | '/interview-room'
     | '/interview-setup'
     | '/jd-match'
@@ -195,6 +206,7 @@ export interface FileRouteTypes {
     | '/_authenticated/analytics'
     | '/_authenticated/audit'
     | '/_authenticated/dashboard'
+    | '/_authenticated/history'
     | '/_authenticated/interview-room'
     | '/_authenticated/interview-setup'
     | '/_authenticated/jd-match'
@@ -290,6 +302,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedInterviewRoomRouteImport
       parentRoute: typeof AuthenticatedRoute
     }
+    '/_authenticated/history': {
+      id: '/_authenticated/history'
+      path: '/history'
+      fullPath: '/history'
+      preLoaderRoute: typeof AuthenticatedHistoryRouteImport
+      parentRoute: typeof AuthenticatedRoute
+    }
     '/_authenticated/dashboard': {
       id: '/_authenticated/dashboard'
       path: '/dashboard'
@@ -326,6 +345,7 @@ interface AuthenticatedRouteChildren {
   AuthenticatedAnalyticsRoute: typeof AuthenticatedAnalyticsRoute
   AuthenticatedAuditRoute: typeof AuthenticatedAuditRoute
   AuthenticatedDashboardRoute: typeof AuthenticatedDashboardRoute
+  AuthenticatedHistoryRoute: typeof AuthenticatedHistoryRoute
   AuthenticatedInterviewRoomRoute: typeof AuthenticatedInterviewRoomRoute
   AuthenticatedInterviewSetupRoute: typeof AuthenticatedInterviewSetupRoute
   AuthenticatedJdMatchRoute: typeof AuthenticatedJdMatchRoute
@@ -340,6 +360,7 @@ const AuthenticatedRouteChildren: AuthenticatedRouteChildren = {
   AuthenticatedAnalyticsRoute: AuthenticatedAnalyticsRoute,
   AuthenticatedAuditRoute: AuthenticatedAuditRoute,
   AuthenticatedDashboardRoute: AuthenticatedDashboardRoute,
+  AuthenticatedHistoryRoute: AuthenticatedHistoryRoute,
   AuthenticatedInterviewRoomRoute: AuthenticatedInterviewRoomRoute,
   AuthenticatedInterviewSetupRoute: AuthenticatedInterviewSetupRoute,
   AuthenticatedJdMatchRoute: AuthenticatedJdMatchRoute,
