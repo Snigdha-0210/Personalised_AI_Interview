@@ -16,6 +16,7 @@ import { Route as IndexRouteImport } from './routes/index'
 import { Route as AuthenticatedSkillGapRouteImport } from './routes/_authenticated/skill-gap'
 import { Route as AuthenticatedResumeRouteImport } from './routes/_authenticated/resume'
 import { Route as AuthenticatedJdMatchRouteImport } from './routes/_authenticated/jd-match'
+import { Route as AuthenticatedInterviewSetupRouteImport } from './routes/_authenticated/interview-setup'
 import { Route as AuthenticatedDashboardRouteImport } from './routes/_authenticated/dashboard'
 
 const SignupRoute = SignupRouteImport.update({
@@ -52,6 +53,12 @@ const AuthenticatedJdMatchRoute = AuthenticatedJdMatchRouteImport.update({
   path: '/jd-match',
   getParentRoute: () => AuthenticatedRoute,
 } as any)
+const AuthenticatedInterviewSetupRoute =
+  AuthenticatedInterviewSetupRouteImport.update({
+    id: '/interview-setup',
+    path: '/interview-setup',
+    getParentRoute: () => AuthenticatedRoute,
+  } as any)
 const AuthenticatedDashboardRoute = AuthenticatedDashboardRouteImport.update({
   id: '/dashboard',
   path: '/dashboard',
@@ -63,6 +70,7 @@ export interface FileRoutesByFullPath {
   '/login': typeof LoginRoute
   '/signup': typeof SignupRoute
   '/dashboard': typeof AuthenticatedDashboardRoute
+  '/interview-setup': typeof AuthenticatedInterviewSetupRoute
   '/jd-match': typeof AuthenticatedJdMatchRoute
   '/resume': typeof AuthenticatedResumeRoute
   '/skill-gap': typeof AuthenticatedSkillGapRoute
@@ -72,6 +80,7 @@ export interface FileRoutesByTo {
   '/login': typeof LoginRoute
   '/signup': typeof SignupRoute
   '/dashboard': typeof AuthenticatedDashboardRoute
+  '/interview-setup': typeof AuthenticatedInterviewSetupRoute
   '/jd-match': typeof AuthenticatedJdMatchRoute
   '/resume': typeof AuthenticatedResumeRoute
   '/skill-gap': typeof AuthenticatedSkillGapRoute
@@ -83,6 +92,7 @@ export interface FileRoutesById {
   '/login': typeof LoginRoute
   '/signup': typeof SignupRoute
   '/_authenticated/dashboard': typeof AuthenticatedDashboardRoute
+  '/_authenticated/interview-setup': typeof AuthenticatedInterviewSetupRoute
   '/_authenticated/jd-match': typeof AuthenticatedJdMatchRoute
   '/_authenticated/resume': typeof AuthenticatedResumeRoute
   '/_authenticated/skill-gap': typeof AuthenticatedSkillGapRoute
@@ -94,6 +104,7 @@ export interface FileRouteTypes {
     | '/login'
     | '/signup'
     | '/dashboard'
+    | '/interview-setup'
     | '/jd-match'
     | '/resume'
     | '/skill-gap'
@@ -103,6 +114,7 @@ export interface FileRouteTypes {
     | '/login'
     | '/signup'
     | '/dashboard'
+    | '/interview-setup'
     | '/jd-match'
     | '/resume'
     | '/skill-gap'
@@ -113,6 +125,7 @@ export interface FileRouteTypes {
     | '/login'
     | '/signup'
     | '/_authenticated/dashboard'
+    | '/_authenticated/interview-setup'
     | '/_authenticated/jd-match'
     | '/_authenticated/resume'
     | '/_authenticated/skill-gap'
@@ -176,6 +189,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedJdMatchRouteImport
       parentRoute: typeof AuthenticatedRoute
     }
+    '/_authenticated/interview-setup': {
+      id: '/_authenticated/interview-setup'
+      path: '/interview-setup'
+      fullPath: '/interview-setup'
+      preLoaderRoute: typeof AuthenticatedInterviewSetupRouteImport
+      parentRoute: typeof AuthenticatedRoute
+    }
     '/_authenticated/dashboard': {
       id: '/_authenticated/dashboard'
       path: '/dashboard'
@@ -188,6 +208,7 @@ declare module '@tanstack/react-router' {
 
 interface AuthenticatedRouteChildren {
   AuthenticatedDashboardRoute: typeof AuthenticatedDashboardRoute
+  AuthenticatedInterviewSetupRoute: typeof AuthenticatedInterviewSetupRoute
   AuthenticatedJdMatchRoute: typeof AuthenticatedJdMatchRoute
   AuthenticatedResumeRoute: typeof AuthenticatedResumeRoute
   AuthenticatedSkillGapRoute: typeof AuthenticatedSkillGapRoute
@@ -195,6 +216,7 @@ interface AuthenticatedRouteChildren {
 
 const AuthenticatedRouteChildren: AuthenticatedRouteChildren = {
   AuthenticatedDashboardRoute: AuthenticatedDashboardRoute,
+  AuthenticatedInterviewSetupRoute: AuthenticatedInterviewSetupRoute,
   AuthenticatedJdMatchRoute: AuthenticatedJdMatchRoute,
   AuthenticatedResumeRoute: AuthenticatedResumeRoute,
   AuthenticatedSkillGapRoute: AuthenticatedSkillGapRoute,
